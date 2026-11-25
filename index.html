@@ -3,181 +3,696 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Holdings HQ — مكتب MODEL الهندسي 3D</title>
+<title>MODEL Engineering Studio — لوحة الإدارة ثلاثية الأبعاد</title>
 <style>
+  :root {
+    --bg: #070d19;
+    --panel: rgba(13, 22, 38, 0.92);
+    --panel-border: rgba(56, 189, 248, 0.25);
+    --accent: #38bdf8;
+    --accent-2: #10b981;
+    --warn: #f59e0b;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
-  body { overflow: hidden; background: #0f172a; color: #f8fafc; }
+  body { overflow: hidden; background: var(--bg); color: var(--text); }
   #canvas-container { width: 100vw; height: 100vh; display: block; }
-  .top-bar { position: fixed; top: 15px; right: 15px; left: 15px; display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px); padding: 12px 20px; border-radius: 14px; border: 1px solid rgba(56, 189, 248, 0.3); z-index: 10; flex-wrap: wrap; gap: 10px; }
-  .brand { font-size: 17px; font-weight: bold; color: #38bdf8; }
-  .brand span { color: #94a3b8; font-size: 13px; font-weight: normal; margin-right: 8px; }
-  .controls { display: flex; gap: 8px; flex-wrap: wrap; }
-  button { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; }
-  button:hover, button.active { background: #0284c7; border-color: #38bdf8; color: #fff; }
-  .btn-approval { background: #b45309; border-color: #f59e0b; color: #fff; }
-  .companies-panel { position: fixed; top: 80px; right: 15px; width: 220px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px); padding: 14px; border-radius: 14px; border: 1px solid rgba(148, 163, 184, 0.2); z-index: 10; }
-  .companies-panel h3 { font-size: 13px; color: #94a3b8; margin-bottom: 10px; }
-  .company-item { padding: 8px 10px; border-radius: 8px; margin-bottom: 6px; font-size: 12px; background: rgba(30, 41, 59, 0.7); cursor: pointer; display: flex; justify-content: space-between; }
-  .company-item.active { background: rgba(2, 132, 199, 0.35); border: 1px solid #38bdf8; }
-  .badge-on { color: #4ade80; }
-  .badge-soon { color: #94a3b8; }
-  .agent-card { position: fixed; bottom: 20px; left: 20px; width: 330px; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(12px); padding: 18px; border-radius: 16px; border: 1px solid #38bdf8; z-index: 10; display: none; }
-  .agent-card h2 { font-size: 16px; color: #38bdf8; margin-bottom: 4px; }
-  .agent-role { font-size: 12px; color: #94a3b8; margin-bottom: 10px; }
-  .agent-desc { font-size: 13px; line-height: 1.5; color: #cbd5e1; margin-bottom: 12px; }
-  .task-input { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #fff; margin-bottom: 8px; font-size: 13px; }
-  .close-btn { position: absolute; top: 10px; left: 12px; background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer; }
-  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.65); display: none; align-items: center; justify-content: center; z-index: 20; }
-  .modal-content { background: #0f172a; border: 1px solid #f59e0b; border-radius: 16px; width: 90%; max-width: 480px; padding: 20px; }
-  .approval-item { background: #1e293b; padding: 12px; border-radius: 10px; margin-bottom: 10px; font-size: 13px; }
-  .approval-actions { margin-top: 8px; display: flex; gap: 8px; }
+
+  /* الشريط العلوي */
+  .topbar {
+    position: fixed; top: 14px; right: 14px; left: 14px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+    background: var(--panel); backdrop-filter: blur(14px);
+    border: 1px solid var(--panel-border); border-radius: 14px;
+    padding: 10px 18px; z-index: 20; box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+  }
+  .brand-box { display: flex; align-items: center; gap: 10px; }
+  .brand-title { font-size: 16px; font-weight: 700; color: var(--accent); }
+  .brand-sub { font-size: 12px; color: var(--muted); background: rgba(30,41,59,0.8); padding: 3px 9px; border-radius: 999px; }
+
+  .nav-group { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+  button {
+    background: #142238; color: var(--text); border: 1px solid #283b59;
+    padding: 7px 12px; border-radius: 9px; font-size: 12.5px; cursor: pointer;
+    transition: all 0.18s ease;
+  }
+  button:hover { background: #1d3557; border-color: var(--accent); }
+  button.active { background: #0284c7; border-color: #7dd3fc; color: #fff; font-weight: 600; }
+  .btn-amber { background: rgba(180, 83, 9, 0.85); border-color: #fbbf24; color: #fff; }
+  .btn-amber:hover { background: #b45309; }
+
+  /* القائمة الجانبية اليمنى: الأقسام والموظفون */
+  .sidebar {
+    position: fixed; top: 74px; right: 14px; bottom: 14px; width: 265px;
+    background: var(--panel); backdrop-filter: blur(14px);
+    border: 1px solid var(--panel-border); border-radius: 16px;
+    padding: 14px; z-index: 15; display: flex; flex-direction: column; gap: 12px;
+    overflow-y: auto;
+  }
+  .section-label { font-size: 11.5px; color: var(--muted); font-weight: 700; margin-bottom: 6px; letter-spacing: 0.3px; }
+  .zone-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .zone-btn { text-align: center; padding: 7px 6px; font-size: 11.5px; border-radius: 8px; }
+
+  .dept-block { margin-bottom: 8px; }
+  .dept-title {
+    font-size: 12px; font-weight: 700; color: #7dd3fc;
+    padding: 5px 8px; background: rgba(30,41,59,0.65); border-radius: 7px; margin-bottom: 5px;
+  }
+  .emp-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 9px; border-radius: 8px; cursor: pointer; font-size: 12.5px;
+    border: 1px solid transparent; margin-bottom: 4px; background: rgba(15,23,42,0.55);
+  }
+  .emp-item:hover, .emp-item.selected { background: rgba(2, 132, 199, 0.25); border-color: var(--accent); }
+  .emp-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-2); flex-shrink: 0; }
+  .emp-meta { display: flex; align-items: center; gap: 8px; }
+  .emp-role-mini { font-size: 10.5px; color: var(--muted); }
+
+  /* نافذة إدارة الموظف والدردشة والتغذية الراجعة */
+  .workspace-drawer {
+    position: fixed; top: 74px; left: 14px; bottom: 14px; width: 430px; max-width: calc(100vw - 295px);
+    background: rgba(10, 18, 32, 0.96); backdrop-filter: blur(18px);
+    border: 1px solid rgba(56, 189, 248, 0.45); border-radius: 18px;
+    z-index: 25; display: none; flex-direction: column; overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.65);
+  }
+  .drawer-header {
+    padding: 14px 16px; border-bottom: 1px solid rgba(148,163,184,0.18);
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
+    background: rgba(15,23,42,0.9);
+  }
+  .drawer-name { font-size: 17px; font-weight: 700; color: #38bdf8; }
+  .drawer-role { font-size: 12px; color: #cbd5e1; margin-top: 2px; }
+  .drawer-persona { font-size: 11.5px; color: #fbbf24; margin-top: 4px; }
+  .close-x { background: rgba(30,41,59,0.9); border: 1px solid #334155; color: #f8fafc; padding: 4px 9px; border-radius: 7px; }
+
+  .tabs-bar {
+    display: flex; border-bottom: 1px solid rgba(148,163,184,0.18); background: rgba(15,23,42,0.6);
+  }
+  .tab-btn {
+    flex: 1; border: none; border-radius: 0; padding: 10px 8px; font-size: 12px;
+    background: transparent; color: var(--muted); border-bottom: 2px solid transparent;
+  }
+  .tab-btn.active { color: #38bdf8; border-bottom-color: #38bdf8; background: rgba(56,189,248,0.08); font-weight: 700; }
+
+  .tab-body { flex: 1; overflow-y: auto; padding: 14px; display: none; flex-direction: column; gap: 10px; }
+  .tab-body.active { display: flex; }
+
+  /* الدردشة */
+  .chat-stream { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 9px; padding-left: 4px; }
+  .msg { max-width: 88%; padding: 9px 12px; border-radius: 12px; font-size: 12.5px; line-height: 1.55; white-space: pre-wrap; }
+  .msg-user { align-self: flex-start; background: #0369a1; color: #fff; border-bottom-right-radius: 3px; }
+  .msg-agent { align-self: flex-end; background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-bottom-left-radius: 3px; }
+  .msg-tag { font-size: 10.5px; color: #7dd3fc; margin-bottom: 3px; font-weight: 700; }
+
+  .chat-composer { display: flex; gap: 7px; padding-top: 8px; border-top: 1px solid rgba(148,163,184,0.15); }
+  .chat-input {
+    flex: 1; background: #142238; border: 1px solid #2c4366; color: #fff;
+    border-radius: 9px; padding: 9px 11px; font-size: 12.5px; outline: none;
+  }
+  .chat-input:focus { border-color: var(--accent); }
+
+  /* الملف الشخصي والتغذية الراجعة */
+  .info-card {
+    background: rgba(20, 34, 56, 0.75); border: 1px solid rgba(148,163,184,0.18);
+    border-radius: 11px; padding: 11px; font-size: 12.5px; line-height: 1.6;
+  }
+  .info-card h4 { color: #7dd3fc; font-size: 12.5px; margin-bottom: 5px; }
+  .skill-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .chip { background: rgba(16,185,129,0.16); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35); padding: 3px 8px; border-radius: 999px; font-size: 11px; }
+
+  textarea.fb-box {
+    width: 100%; min-height: 75px; background: #142238; border: 1px solid #2c4366;
+    color: #fff; border-radius: 10px; padding: 9px 11px; font-size: 12.5px; resize: vertical;
+  }
+  .fb-list { display: flex; flex-direction: column; gap: 7px; }
+  .fb-entry { background: rgba(30,41,59,0.8); border-right: 3px solid var(--warn); padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.5; }
+  .fb-time { font-size: 10.5px; color: var(--muted); margin-top: 3px; }
+
+  /* نافذة الموافقات */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(2, 6, 23, 0.72);
+    display: none; align-items: center; justify-content: center; z-index: 40;
+  }
+  .modal-box {
+    width: 92%; max-width: 470px; background: #0d1626;
+    border: 1px solid #f59e0b; border-radius: 16px; padding: 18px;
+  }
+  .app-card { background: #152238; border: 1px solid #283b59; border-radius: 10px; padding: 11px; margin-bottom: 10px; font-size: 12.5px; }
+  .app-btns { display: flex; gap: 8px; margin-top: 8px; }
+
+  @media (max-width: 900px) {
+    .sidebar { width: 210px; }
+    .workspace-drawer { width: calc(100vw - 236px); max-width: none; }
+  }
 </style>
 </head>
 <body>
-<div class="top-bar">
-  <div class="brand">🏢 المقر الرئيسي للمجموعة <span>| مكتب MODEL الهندسي (3D)</span></div>
-  <div class="controls">
-    <button onclick="setCameraView('iso')" class="active" id="btn-iso">منظور 3D</button>
-    <button onclick="setCameraView('top')" id="btn-top">Top View</button>
-    <button onclick="setCameraView('meeting')" id="btn-meeting">قاعة الاجتماعات</button>
-    <button class="btn-approval" onclick="toggleApprovals(true)">⏳ بانتظار موافقتك (2)</button>
+
+<div class="topbar">
+  <div class="brand-box">
+    <div class="brand-title">🏛️ مكتب MODEL الهندسي</div>
+    <div class="brand-sub">إدارة المقر ثلاثي الأبعاد • 15 كادراً</div>
+  </div>
+  <div class="nav-group">
+    <button id="cam-overview" class="active" onclick="focusZone('overview')">منظور عام</button>
+    <button id="cam-top" onclick="focusZone('top')">مخطط علوي (Top)</button>
+    <button id="cam-reception" onclick="focusZone('reception')">الاستقبال</button>
+    <button id="cam-meeting" onclick="focusZone('meeting')">قاعة الاجتماعات</button>
+    <button id="cam-pantry" onclick="focusZone('pantry')">البوفيه</button>
+    <button class="btn-amber" onclick="openApprovals(true)">⏳ الموافقات (<span id="pending-count">2</span>)</button>
   </div>
 </div>
-<div class="companies-panel">
-  <h3>شركات المجموعة (6)</h3>
-  <div class="company-item active"><span>1. مكتب MODEL الهندسي</span><span class="badge-on">● نشط</span></div>
-  <div class="company-item" onclick="alert('قريباً: شركة التسويق')"><span>2. شركة التسويق</span><span class="badge-soon">قريباً</span></div>
-  <div class="company-item" onclick="alert('قريباً: جرافيك ديزاين')"><span>3. جرافيك ديزاين</span><span class="badge-soon">قريباً</span></div>
-  <div class="company-item" onclick="alert('قريباً: المتجر الإلكتروني')"><span>4. المتجر الإلكتروني</span><span class="badge-soon">قريباً</span></div>
-  <div class="company-item" onclick="alert('قريباً: بوت التداول')"><span>5. بوت التداول</span><span class="badge-soon">قريباً</span></div>
-  <div class="company-item" onclick="alert('قريباً: شركة الديليفري')"><span>6. شركة الديليفري</span><span class="badge-soon">قريباً</span></div>
-</div>
-<div class="agent-card" id="agent-card">
-  <button class="close-btn" onclick="closeAgentCard()">✕</button>
-  <h2 id="ag-name"></h2>
-  <div class="agent-role" id="ag-role"></div>
-  <div class="agent-desc" id="ag-desc"></div>
-  <input type="text" class="task-input" id="ag-task" placeholder="أمر مباشر للموظف...">
-  <button style="width:100%; background:#0284c7;" onclick="sendDirectTask()">إرسال الأمر</button>
-</div>
-<div class="modal" id="approval-modal">
-  <div class="modal-content">
-    <h3 style="color:#fbbf24; margin-bottom:12px;">⏳ مهام بانتظار اعتمادك</h3>
-    <div class="approval-item" id="app-1">
-      <strong>[MODEL - آدم]:</strong> منشور تعريفي لمكتب MODEL جاهز للنشر.
-      <div class="approval-actions">
-        <button style="background:#16a34a;" onclick="approveItem('app-1')">✔ اعتماد</button>
-        <button style="background:#dc2626;" onclick="approveItem('app-1')">✕ رفض</button>
+
+<aside class="sidebar">
+  <div>
+    <div class="section-label">الانتقال السريع بين مناطق المقر</div>
+    <div class="zone-grid">
+      <button class="zone-btn" onclick="focusZone('exec')">الإدارة العليا</button>
+      <button class="zone-btn" onclick="focusZone('eng')">القسم الهندسي</button>
+      <button class="zone-btn" onclick="focusZone('mkt')">التسويق والفرص</button>
+      <button class="zone-btn" onclick="focusZone('admin')">الإدارة المساندة</button>
+    </div>
+  </div>
+
+  <div id="roster-container"></div>
+</aside>
+
+<section class="workspace-drawer" id="drawer">
+  <div class="drawer-header">
+    <div>
+      <div class="drawer-name" id="d-name">اسم الموظف</div>
+      <div class="drawer-role" id="d-role">المسمى والقسم</div>
+      <div class="drawer-persona" id="d-persona">الشخصية المهنية</div>
+    </div>
+    <button class="close-x" onclick="closeDrawer()">✕</button>
+  </div>
+
+  <div class="tabs-bar">
+    <button class="tab-btn active" id="tab-chat-btn" onclick="switchTab('chat')">💬 دردشة وأوامر</button>
+    <button class="tab-btn" id="tab-profile-btn" onclick="switchTab('profile')">🎯 الخبرات والشخصية</button>
+    <button class="tab-btn" id="tab-feedback-btn" onclick="switchTab('feedback')">📝 تغذية راجعة</button>
+  </div>
+
+  <!-- تبويب الدردشة والأوامر -->
+  <div class="tab-body active" id="tab-chat">
+    <div class="chat-stream" id="chat-stream"></div>
+    <div class="chat-composer">
+      <input type="text" class="chat-input" id="chat-input" placeholder="ناقش الموظف أو أعطه أمراً أو استفساراً..." onkeydown="if(event.key==='Enter') sendMessage()">
+      <button class="active" onclick="sendMessage()">إرسال</button>
+    </div>
+  </div>
+
+  <!-- تبويب الخبرات والشخصية -->
+  <div class="tab-body" id="tab-profile">
+    <div class="info-card">
+      <h4>الشخصية وأسلوب العمل</h4>
+      <div id="d-style"></div>
+    </div>
+    <div class="info-card">
+      <h4>الخبرات والتخصصات</h4>
+      <div id="d-exp"></div>
+      <div class="skill-chips" id="d-skills"></div>
+    </div>
+  </div>
+
+  <!-- تبويب التغذية الراجعة المفتوحة -->
+  <div class="tab-body" id="tab-feedback">
+    <div class="info-card">
+      <h4>إضافة تغذية راجعة / توجيه مفتوح</h4>
+      <p style="font-size:11.5px; color:#94a3b8; margin-bottom:7px;">سجّل ملاحظاتك على أداء الموظف أو معايير الجودة المطلوبة منه لتنعكس في ردوده وتوجيهاته.</p>
+      <textarea class="fb-box" id="fb-input" placeholder="اكتب ملاحظتك أو التغذية الراجعة هنا..."></textarea>
+      <button class="active" style="margin-top:7px; width:100%;" onclick="addFeedback()">حفظ التغذية الراجعة</button>
+    </div>
+    <div class="section-label">سجل التغذية الراجعة المحفوظة</div>
+    <div class="fb-list" id="fb-list"></div>
+  </div>
+</section>
+
+<div class="modal-backdrop" id="approval-modal">
+  <div class="modal-box">
+    <h3 style="color:#fbbf24; margin-bottom:12px;">⏳ بنود بانتظار اعتمادك</h3>
+    <div class="app-card" id="item-a">
+      <div><strong>آدم (السوشيال ميديا):</strong> مسودة منشور تعريفي لخدمات المكتب الهندسي جاهزة للاعتماد.</div>
+      <div class="app-btns">
+        <button style="background:#15803d; border-color:#22c55e;" onclick="resolveApproval('item-a')">✔ اعتماد</button>
+        <button style="background:#b91c1c; border-color:#ef4444;" onclick="resolveApproval('item-a')">✕ رفض</button>
       </div>
     </div>
-    <div class="approval-item" id="app-2">
-      <strong>[MODEL - م. نديم]:</strong> فرصة مشروع حصر كميات وتصميم جاهزة للعرض.
-      <div class="approval-actions">
-        <button style="background:#16a34a;" onclick="approveItem('app-2')">✔ اعتماد</button>
-        <button style="background:#dc2626;" onclick="approveItem('app-2')">✕ تجاهل</button>
+    <div class="app-card" id="item-b">
+      <div><strong>م. نديم (استقطاب الفرص):</strong> فرصة تصميم وحصر كميات مشروع سكني جاهزة لمراجعة العرض.</div>
+      <div class="app-btns">
+        <button style="background:#15803d; border-color:#22c55e;" onclick="resolveApproval('item-b')">✔ اعتماد</button>
+        <button style="background:#b91c1c; border-color:#ef4444;" onclick="resolveApproval('item-b')">✕ استبعاد</button>
       </div>
     </div>
-    <button style="width:100%; margin-top:8px;" onclick="toggleApprovals(false)">إغلاق</button>
+    <button style="width:100%; margin-top:6px;" onclick="openApprovals(false)">إغلاق</button>
   </div>
 </div>
+
 <div id="canvas-container"></div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-  const agents = [
-    { name: "م. طارق", role: "المدير العام (GM)", dept: "الإدارة", x: -9, z: -7, color: 0x38bdf8, desc: "الرؤية الاستراتيجية واعتماد القرارات الكبرى." },
-    { name: "م. رامي", role: "المدير التنفيذي (COO)", dept: "الإدارة", x: -5, z: -7, color: 0x0ea5e9, desc: "ضبط سير العمليات والتنسيق بين الأقسام." },
-    { name: "م. لينا", role: "مدير المشاريع (PM)", dept: "الإدارة", x: -1, z: -7, color: 0x0284c7, desc: "تقسيم المشاريع ومتابعة الجداول الزمنية." },
-    { name: "م. كريم", role: "المهندس المعماري", dept: "الهندسة", x: -9, z: -1, color: 0x10b981, desc: "التخطيط المعماري وتوزيع الفراغات." },
-    { name: "م. هاني", role: "المهندس المدني / الإنشائي", dept: "الهندسة", x: -5, z: -1, color: 0x059669, desc: "الأنظمة الإنشائية والأحمال والمواصفات." },
-    { name: "م. سلمى", role: "مصممة الديكور الداخلي", dept: "الهندسة", x: -1, z: -1, color: 0x34d399, desc: "التصورات الداخلية والخامات والإضاءة." },
-    { name: "م. زياد", role: "مصمم الواجهات الخارجية", dept: "الهندسة", x: -9, z: 4, color: 0x6ee7b7, desc: "تصميم الواجهات وتنسيق المواقع." },
-    { name: "م. نادر", role: "مهندس الكميات (BOQ)", dept: "الهندسة", x: -5, z: 4, color: 0x14b8a6, desc: "جداول الكميات وحصر المواد والتكاليف." },
-    { name: "م. بلال", role: "مهندس الإشراف والموقع", dept: "الهندسة", x: -1, z: 4, color: 0x0d9488, desc: "متابعة مطابقة التنفيذ للمخططات." },
-    { name: "م. نديم", role: "مستقطب المشاريع", dept: "التسويق والفرص", x: 5, z: -7, color: 0xf59e0b, desc: "البحث عن الفرص الهندسية وصياغة العروض." },
-    { name: "آدم", role: "مدير السوشيال ميديا", dept: "التسويق والفرص", x: 9, z: -7, color: 0xfbbf24, desc: "إدارة النشر الآلي ومتابعة التفاعل." },
-    { name: "يارا", role: "أخصائية التسويق والمحتوى", dept: "التسويق والفرص", x: 7, z: -3, color: 0xd97706, desc: "الهوية التسويقية وسابقة الأعمال." },
-    { name: "دانا", role: "الموارد البشرية (HR)", dept: "الإدارة المساندة", x: 5, z: 2, color: 0xa855f7, desc: "تنظيم الصلاحيات ومنع تداخل المهام." },
-    { name: "أ. فؤاد", role: "المستشار القانوني", dept: "الإدارة المساندة", x: 9, z: 2, color: 0x9333ea, desc: "مراجعة العقود والاتفاقيات." },
-    { name: "سمر", role: "المحاسبة والمالية", dept: "الإدارة المساندة", x: 7, z: 6, color: 0xc084fc, desc: "الحسابات والفواتير والتقارير المالية." }
-  ];
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0f172a);
-  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(0, 22, 24);
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+const STAFF = [
+  // الإدارة العليا
+  { id: "tareq", name: "م. طارق", role: "المدير العام (GM)", dept: "الإدارة العليا", persona: "حازم، استراتيجي، يركز على العائد والتموضع السوقي", style: "يحب الملخصات التنفيذية الواضحة والقرارات المبنية على أثر استراتيجي ومالي واضح.", exp: "قيادة المكاتب الهندسية، التوسع المؤسسي، حوكمة المشاريع الكبرى، وتطوير الشراكات.", skills: ["القيادة الاستراتيجية", "الحوكمة", "تطوير الأعمال"], x: -13, z: -10, color: 0x38bdf8 },
+  { id: "rami", name: "م. رامي", role: "المدير التنفيذي (COO)", dept: "الإدارة العليا", persona: "منضبط، عملي، يضبط الإيقاع اليومي والموارد", style: "يركز على تحويل الخطط إلى خطوات تنفيذية قابلة للقياس ومواعيد تسليم دقيقة.", exp: "إدارة العمليات اليومية، توزيع الموارد، تحسين الكفاءة التشغيلية، ومتابعة الاختناقات.", skills: ["إدارة العمليات", "جدولة التنفيذ", "ضبط الجودة"], x: -8.5, z: -10, color: 0x0ea5e9 },
+  { id: "lina", name: "م. لينا", role: "مديرة المشاريع (PM)", dept: "الإدارة العليا", persona: "منظمة، دقيقة، تتابع التفاصيل والاعتمادات", style: "تقسّم المهام إلى مراحل ومخرجات واضحة وتنبه مبكراً لأي تأخير في المسار الحرج.", exp: "إدارة نطاق المشاريع، الجداول الزمنية، تنسيق التخصصات، وتقارير الإنجاز.", skills: ["إدارة المشاريع", "تخطيط المراحل", "تنسيق الفرق"], x: -4, z: -10, color: 0x0284c7 },
+
+  // القسم الهندسي
+  { id: "karim", name: "م. كريم", role: "مهندس معماري", dept: "القسم الهندسي", persona: "إبداعي، تحليلي للفراغات، يهتم بالوظيفة والجمال", style: "يوازن بين جمالية الواجهة والكتلة وبين سهولة الحركة والتهوية والإضاءة الطبيعية.", exp: "التصميم المعماري، دراسة الفراغات، المخططات التنفيذية، والحلول التصميمية للمباني.", skills: ["التصميم المعماري", "تخطيط الفراغات", "المخططات"], x: -13, z: -2.5, color: 0x10b981 },
+  { id: "hani", name: "م. هاني", role: "مهندس مدني وإنشائي", dept: "القسم الهندسي", persona: "رصين، دقيق في الحسابات، يقدّم الأمان الإنشائي أولاً", style: "يتحدث بلغة الأنظمة الإنشائية والأحمال والاشتراطات الفنية والبدائل الآمنة اقتصادياً.", exp: "التحليل والنظام الإنشائي، دراسة الأحمال، المواصفات الإنشائية، ومعالجة العناصر الإنشائية.", skills: ["الأنظمة الإنشائية", "دراسة الأحمال", "المواصفات"], x: -8.5, z: -2.5, color: 0x059669 },
+  { id: "salma", name: "م. سلمى", role: "مصممة ديكور داخلي", dept: "القسم الهندسي", persona: "ذائقة عالية، حساسة للتفاصيل واللون والخامة", style: "تنسق بين الألوان، الإضاءة، الخامات، والأثاث لتخلق هوية داخلية متناغمة ومريحة.", exp: "التصميم الداخلي، اختيار الخامات والتشطيبات، توزيع الإضاءة، وتصور الفراغات الداخلية.", skills: ["الديكور الداخلي", "الخامات والإضاءة", "التنسيق اللوني"], x: -4, z: -2.5, color: 0x34d399 },
+  { id: "ziad", name: "م. زياد", role: "مصمم واجهات وديكور خارجي", dept: "القسم الهندسي", persona: "بصري، معاصر، يراعي البيئة والمحيط العمراني", style: "يركز على إبراز الهوية الخارجية للمبنى وتكامل الواجهات والمداخل والمناظر المحيطة.", exp: "تصميم الواجهات، المعالجات الخارجية، تنسيق المواقع الخارجية، والهوية البصرية للمباني.", skills: ["تصميم الواجهات", "التنسيق الخارجي", "الهوية البصرية"], x: -13, z: 3.5, color: 0x6ee7b7 },
+  { id: "nader", name: "م. نادر", role: "مهندس كميات وتكاليف (BOQ)", dept: "القسم الهندسي", persona: "رقمي، مدقق، يحسب كل بند بدقة متناهية", style: "يحوّل المخططات والبنود إلى جداول كميات واضحة وتقديرات تكلفة منظمة ومقارنات أسعار.", exp: "حصر الكميات، إعداد جداول BOQ، تحليل الأسعار، ومراجعة مستخلصات البنود.", skills: ["حصر الكميات", "جداول BOQ", "تقدير التكاليف"], x: -8.5, z: 3.5, color: 0x14b8a6 },
+  { id: "bilal", name: "م. بلال", role: "مهندس إشراف وموقع", dept: "القسم الهندسي", persona: "ميداني، يقظ، يربط المخطط بالواقع التنفيذي", style: "يركز على مطابقة التنفيذ للمخططات والمواصفات، ورصد الملاحظات الميدانية مبكراً.", exp: "الإشراف الهندسي، متابعة التنفيذ الميداني، فحص المطابقة، وتقارير الموقع.", skills: ["الإشراف الميداني", "مطابقة التنفيذ", "تقارير الموقع"], x: -4, z: 3.5, color: 0x0d9488 },
+
+  // الاستقطاب والتسويق
+  { id: "nadeem", name: "م. نديم", role: "مستقطب المشاريع وتطوير الأعمال", dept: "الاستقطاب والتسويق", persona: "استباقي، عملي، يقتنص الفرص ويصيغ العروض", style: "يركز على قنوات الفرص، جودة صياغة العروض، وسرعة الاستجابة للعملاء المحتملين.", exp: "رصد فرص المشاريع الهندسية، تحليل متطلبات العميل، وصياغة عروض المشاريع (Proposals).", skills: ["اقتناص الفرص", "كتابة العروض", "تطوير العملاء"], x: 5.5, z: -10, color: 0xf59e0b },
+  { id: "adam", name: "آدم", role: "مدير صفحات السوشيال ميديا", dept: "الاستقطاب والتسويق", persona: "سريع، منظم، يتابع النشر والتفاعل والجدولة", style: "يدير قوائم النشر وحالات الجاهزية والاعتماد ويتابع استفسارات الجمهور عبر المنصات.", exp: "إدارة قنوات التواصل، جدولة المحتوى، متابعة التفاعل، وتنظيم طوابير النشر.", skills: ["إدارة المنصات", "جدولة النشر", "متابعة التفاعل"], x: 10.5, z: -10, color: 0xfbbf24 },
+  { id: "yara", name: "يارا", role: "أخصائية التسويق والمحتوى", dept: "الاستقطاب والتسويق", persona: "مقنعة، سردية، تبرز قيمة المكتب بأسلوب احترافي", style: "تحوّل الخبرات الهندسية والمشاريع إلى رسائل تسويقية واضحة وسابقة أعمال مقنعة.", exp: "صياغة المحتوى التسويقي، بناء الرسائل، عرض سابقة الأعمال، وتخطيط الحملات.", skills: ["كتابة المحتوى", "الرسائل التسويقية", "سابقة الأعمال"], x: 8, z: -5, color: 0xd97706 },
+
+  // الإدارة المساندة
+  { id: "dana", name: "دانا", role: "مسؤولة الموارد البشرية (HR)", dept: "الإدارة المساندة", persona: "منصفة، واضحة الأدوار، تمنع التداخل وتحفّز الكفاءة", style: "تضبط توصيف الأدوار، توازن أعباء العمل، وتقترح تحسينات للتطوير المستمر للفريق.", exp: "تحديد الأدوار والصلاحيات، تنظيم فرق العمل، تقييم الأداء، وتطوير الكفاءات.", skills: ["تنظيم الأدوار", "تطوير الفريق", "ضبط الصلاحيات"], x: 5.5, z: 1.5, color: 0xa855f7 },
+  { id: "fouad", name: "أ. فؤاد", role: "المستشار القانوني", dept: "الإدارة المساندة", persona: "حذر، دقيق في البنود، يحمي الحقوق ويقلل المخاطر", style: "ينبّه إلى الالتزامات التعاقدية، صياغة الشروط، وحماية حقوق المكتب والعملاء.", exp: "مراجعة العقود والاتفاقيات، صياغة البنود الوقائية، وتقييم المخاطر النظامية.", skills: ["مراجعة العقود", "إدارة المخاطر", "حماية الحقوق"], x: 10.5, z: 1.5, color: 0x9333ea },
+  { id: "samar", name: "سمر", role: "المحاسبة والمالية", dept: "الإدارة المساندة", persona: "منضبطة مالياً، شفافة، تراقب التدفقات والبنود", style: "تركز على وضوح التكاليف، الفواتير، الدفعات، والانضباط المالي لكل مشروع.", exp: "إدارة الحسابات، تتبع الإيرادات والمصروفات، الفوترة، والتقارير المالية.", skills: ["إدارة الحسابات", "التدفق المالي", "الفوترة والتقارير"], x: 8, z: 5.5, color: 0xc084fc }
+];
+
+// بناء قائمة الموظفين في الشريط الجانبي
+const departmentsOrder = ["الإدارة العليا", "القسم الهندسي", "الاستقطاب والتسويق", "الإدارة المساندة"];
+const rosterContainer = document.getElementById("roster-container");
+
+departmentsOrder.forEach(dept => {
+  const block = document.createElement("div");
+  block.className = "dept-block";
+  block.innerHTML = `<div class="dept-title">${dept}</div>`;
+  STAFF.filter(s => s.dept === dept).forEach(s => {
+    const item = document.createElement("div");
+    item.className = "emp-item";
+    item.id = `roster-${s.id}`;
+    item.innerHTML = `
+      <div class="emp-meta">
+        <span class="emp-dot" style="background:${'#' + s.color.toString(16).padStart(6,'0')}"></span>
+        <div>
+          <div style="font-weight:600">${s.name}</div>
+          <div class="emp-role-mini">${s.role.split('(')[0].trim()}</div>
+        </div>
+      </div>
+      <span style="font-size:11px; color:#7dd3fc;">فتح</span>
+    `;
+    item.onclick = () => selectStaff(s.id, true);
+    block.appendChild(item);
+  });
+  rosterContainer.appendChild(block);
+});
+
+// تخزين الدردشة والتغذية الراجعة لكل موظف
+const STORAGE_KEY = "model_hq_staff_memory_v1";
+let memory = {};
+try { memory = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch(e) { memory = {}; }
+
+function ensureStaffMemory(staff) {
+  if (!memory[staff.id]) {
+    memory[staff.id] = {
+      messages: [
+        {
+          sender: "agent",
+          text: `أهلاً بك أستاذ حازم. أنا ${staff.name} (${staff.role}).\nشخصيتي وأسلوبي: ${staff.persona}.\nكيف يمكنني مساعدتك اليوم أو ما الأمر الذي تود توجيهه؟`
+        }
+      ],
+      feedback: []
+    };
+    saveMemory();
+  }
+  return memory[staff.id];
+}
+
+function saveMemory() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(memory)); } catch(e) {}
+}
+
+let activeStaff = null;
+
+function selectStaff(id, moveCamera = false) {
+  const staff = STAFF.find(s => s.id === id);
+  if (!staff) return;
+  activeStaff = staff;
+  ensureStaffMemory(staff);
+
+  document.querySelectorAll(".emp-item").forEach(el => el.classList.remove("selected"));
+  const rosterEl = document.getElementById(`roster-${staff.id}`);
+  if (rosterEl) rosterEl.classList.add("selected");
+
+  document.getElementById("d-name").innerText = staff.name;
+  document.getElementById("d-role").innerText = `${staff.role} — ${staff.dept}`;
+  document.getElementById("d-persona").innerText = `الشخصية: ${staff.persona}`;
+  document.getElementById("d-style").innerText = staff.style;
+  document.getElementById("d-exp").innerText = staff.exp;
+
+  const skillsEl = document.getElementById("d-skills");
+  skillsEl.innerHTML = "";
+  staff.skills.forEach(sk => {
+    const span = document.createElement("span");
+    span.className = "chip";
+    span.innerText = sk;
+    skillsEl.appendChild(span);
+  });
+
+  renderChat();
+  renderFeedback();
+  document.getElementById("drawer").style.display = "flex";
+
+  if (moveCamera) {
+    controls.target.set(staff.x, 1, staff.z);
+    camera.position.set(staff.x + 5, 6.5, staff.z + 7.5);
+  }
+}
+
+function closeDrawer() {
+  document.getElementById("drawer").style.display = "none";
+  document.querySelectorAll(".emp-item").forEach(el => el.classList.remove("selected"));
+}
+
+function switchTab(tabName) {
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".tab-body").forEach(b => b.classList.remove("active"));
+  document.getElementById(`tab-${tabName}-btn`).classList.add("active");
+  document.getElementById(`tab-${tabName}`).classList.add("active");
+}
+
+function renderChat() {
+  if (!activeStaff) return;
+  const stream = document.getElementById("chat-stream");
+  const data = ensureStaffMemory(activeStaff);
+  stream.innerHTML = "";
+  data.messages.forEach(m => {
+    const div = document.createElement("div");
+    div.className = `msg ${m.sender === "user" ? "msg-user" : "msg-agent"}`;
+    const tag = document.createElement("div");
+    tag.className = "msg-tag";
+    tag.innerText = m.sender === "user" ? "أنت (حازم)" : `${activeStaff.name}`;
+    div.appendChild(tag);
+    const body = document.createElement("div");
+    body.innerText = m.text;
+    div.appendChild(body);
+    stream.appendChild(div);
+  });
+  stream.scrollTop = stream.scrollHeight;
+}
+
+function generateStaffReply(staff, userText, fbList) {
+  const fbNote = fbList.length > 0
+    ? `\n• مراعياً ملاحظتك الأخيرة (${fbList[fbList.length - 1].text}).`
+    : "";
+  return `تم الاستلام والتعامل مع طرحك بروح (${staff.role}) ضمن (${staff.dept}):\n"${userText}"\n\n• منهجيتي في التعامل: ${staff.style}${fbNote}\n• الخطوة التالية المقترحة: تحديد المخرجات المطلوبة والجدول الزمني واعتمادها معك.`;
+}
+
+function sendMessage() {
+  if (!activeStaff) return;
+  const input = document.getElementById("chat-input");
+  const text = input.value.trim();
+  if (!text) return;
+  const data = ensureStaffMemory(activeStaff);
+  data.messages.push({ sender: "user", text });
+  const reply = generateStaffReply(activeStaff, text, data.feedback);
+  data.messages.push({ sender: "agent", text: reply });
+  saveMemory();
+  input.value = "";
+  renderChat();
+}
+
+function addFeedback() {
+  if (!activeStaff) return;
+  const area = document.getElementById("fb-input");
+  const text = area.value.trim();
+  if (!text) return;
+  const data = ensureStaffMemory(activeStaff);
+  const stamp = new Date().toLocaleString("ar-EG", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" });
+  data.feedback.unshift({ text, stamp });
+  saveMemory();
+  area.value = "";
+  renderFeedback();
+}
+
+function renderFeedback() {
+  if (!activeStaff) return;
+  const listEl = document.getElementById("fb-list");
+  const data = ensureStaffMemory(activeStaff);
+  listEl.innerHTML = "";
+  if (data.feedback.length === 0) {
+    listEl.innerHTML = `<div style="font-size:12px; color:#94a3b8;">لا توجد تغذية راجعة مسجلة لهذا الموظف بعد.</div>`;
+    return;
+  }
+  data.feedback.forEach(item => {
+    const d = document.createElement("div");
+    d.className = "fb-entry";
+    d.innerHTML = `<div>${item.text}</div><div class="fb-time">${item.stamp}</div>`;
+    listEl.appendChild(d);
+  });
+}
+
+function openApprovals(show) {
+  document.getElementById("approval-modal").style.display = show ? "flex" : "none";
+}
+
+function resolveApproval(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+  const rem = document.querySelectorAll("#approval-modal .app-card").length;
+  document.getElementById("pending-count").innerText = rem;
+}
+
+// ================= مشهد Three.js وتقسيم المقر =================
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x070d19);
+scene.fog = new THREE.FogExp2(0x070d19, 0.012);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(0, 25, 28);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+document.getElementById("canvas-container").appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI / 2.08;
+
+scene.add(new THREE.AmbientLight(0xdbeafe, 0.65));
+const keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
+keyLight.position.set(18, 30, 20);
+keyLight.castShadow = true;
+scene.add(keyLight);
+
+// أرضية المقر الرئيسية
+const mainFloor = new THREE.Mesh(
+  new THREE.BoxGeometry(36, 0.5, 28),
+  new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.75 })
+);
+mainFloor.position.y = -0.25;
+mainFloor.receiveShadow = true;
+scene.add(mainFloor);
+
+const grid = new THREE.GridHelper(36, 36, 0x1e293b, 0x132036);
+grid.position.y = 0.01;
+scene.add(grid);
+
+function createZonePad(x, z, w, d, colorHex, labelText) {
+  const pad = new THREE.Mesh(
+    new THREE.BoxGeometry(w, 0.06, d),
+    new THREE.MeshStandardMaterial({ color: colorHex, transparent: true, opacity: 0.22 })
+  );
+  pad.position.set(x, 0.03, z);
+  pad.receiveShadow = true;
+  scene.add(pad);
+
+  // إطارات حدود القسم
+  const border = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(w, 0.08, d)),
+    new THREE.LineBasicMaterial({ color: colorHex })
+  );
+  border.position.set(x, 0.04, z);
+  scene.add(border);
+
+  // لوحة اسم القسم
+  const canvas = document.createElement("canvas");
+  canvas.width = 320; canvas.height = 72;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "rgba(10, 18, 32, 0.88)";
+  ctx.fillRect(0, 0, 320, 72);
+  ctx.strokeStyle = "#" + colorHex.toString(16).padStart(6, "0");
+  ctx.lineWidth = 4;
+  ctx.strokeRect(2, 2, 316, 68);
+  ctx.fillStyle = "#f8fafc";
+  ctx.font = "bold 24px Tahoma";
+  ctx.textAlign = "center";
+  ctx.fillText(labelText, 160, 45);
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas) }));
+  sprite.scale.set(4.5, 1.0, 1);
+  sprite.position.set(x, 2.7, z - d / 2 + 0.6);
+  scene.add(sprite);
+}
+
+// تقسيم الأقسام والمرافق بوضوح
+createZonePad(-8.5, -10, 13.5, 5.2, 0x38bdf8, "الإدارة العليا");
+createZonePad(-8.5, 0.5, 13.5, 11.5, 0x10b981, "القسم الهندسي");
+createZonePad(8, -7.5, 10.5, 9.2, 0xf59e0b, "الاستقطاب والتسويق");
+createZonePad(8, 3.5, 10.5, 7.5, 0xa855f7, "الإدارة المساندة");
+createZonePad(0, 10.5, 11, 5.2, 0x22d3ee, "الاستقبال (Reception)");
+createZonePad(-11.5, 10.5, 9.5, 5.2, 0x60a5fa, "قاعة الاجتماعات");
+createZonePad(11.5, 10.5, 9.5, 5.2, 0xfb7185, "البوفيه والاستراحة");
+
+// أثاث قاعة الاجتماعات
+const meetTable = new THREE.Mesh(
+  new THREE.BoxGeometry(5.2, 0.16, 1.8),
+  new THREE.MeshStandardMaterial({ color: 0x1e3a5f, roughness: 0.35 })
+);
+meetTable.position.set(-11.5, 0.85, 10.5);
+scene.add(meetTable);
+[-13.2, -11.5, -9.8].forEach(cx => {
+  [-1.3, 1.3].forEach(cz => {
+    const chair = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.65, 0.65), new THREE.MeshStandardMaterial({ color: 0x334155 }));
+    chair.position.set(cx, 0.35, 10.5 + cz);
+    scene.add(chair);
+  });
+});
+
+// أثاث البوفيه والاستراحة
+const pantryCounter = new THREE.Mesh(
+  new THREE.BoxGeometry(4.2, 1.0, 1.1),
+  new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4 })
+);
+pantryCounter.position.set(11.5, 0.5, 9.2);
+scene.add(pantryCounter);
+const coffeeMachine = new THREE.Mesh(
+  new THREE.BoxGeometry(0.65, 0.55, 0.65),
+  new THREE.MeshStandardMaterial({ color: 0xfb7185, emissive: 0x881337, emissiveIntensity: 0.35 })
+);
+coffeeMachine.position.set(10.4, 1.28, 9.2);
+scene.add(coffeeMachine);
+
+// كاونتر الاستقبال
+const receptionDesk = new THREE.Mesh(
+  new THREE.BoxGeometry(4.6, 1.05, 1.2),
+  new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3 })
+);
+receptionDesk.position.set(0, 0.52, 9.8);
+scene.add(receptionDesk);
+
+// إنشاء مجسمات الموظفين ومكاتبهم
+function makeNameTag(name) {
+  const c = document.createElement("canvas");
+  c.width = 220; c.height = 64;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "rgba(7, 13, 25, 0.9)";
+  ctx.fillRect(0, 0, 220, 64);
+  ctx.strokeStyle = "#38bdf8";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(2, 2, 216, 60);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 24px Tahoma";
+  ctx.textAlign = "center";
+  ctx.fillText(name, 110, 41);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c) }));
+  sp.scale.set(2.5, 0.72, 1);
+  return sp;
+}
+
+const hitTargets = [];
+STAFF.forEach(s => {
+  const grp = new THREE.Group();
+  grp.position.set(s.x, 0, s.z);
+
+  const desk = new THREE.Mesh(
+    new THREE.BoxGeometry(2.1, 0.12, 1.05),
+    new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 })
+  );
+  desk.position.y = 0.75;
+  desk.castShadow = true;
+  grp.add(desk);
+
+  const screen = new THREE.Mesh(
+    new THREE.BoxGeometry(0.85, 0.48, 0.06),
+    new THREE.MeshStandardMaterial({ color: 0x0ea5e9, emissive: 0x0284c7, emissiveIntensity: 0.35 })
+  );
+  screen.position.set(0, 1.08, 0.12);
+  grp.add(screen);
+
+  const torso = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.26, 0.34, 0.88, 16),
+    new THREE.MeshStandardMaterial({ color: s.color })
+  );
+  torso.position.set(0, 0.65, -0.55);
+  torso.castShadow = true;
+  torso.userData = s.id;
+  grp.add(torso);
+  hitTargets.push(torso);
+
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.23, 16, 16),
+    new THREE.MeshStandardMaterial({ color: 0xfde68a })
+  );
+  head.position.set(0, 1.28, -0.55);
+  head.userData = s.id;
+  grp.add(head);
+  hitTargets.push(head);
+
+  const tag = makeNameTag(s.name);
+  tag.position.set(0, 2.15, -0.55);
+  grp.add(tag);
+
+  scene.add(grp);
+});
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+renderer.domElement.addEventListener("click", e => {
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects(hitTargets);
+  if (hits.length > 0) {
+    selectStaff(hits[0].object.userData, false);
+  }
+});
+
+function focusZone(zone) {
+  document.querySelectorAll(".nav-group button").forEach(b => b.classList.remove("active"));
+  const views = {
+    overview: { pos: [0, 25, 28], target: [0, 0, 0], btn: "cam-overview" },
+    top: { pos: [0, 38, 0.1], target: [0, 0, 0], btn: "cam-top" },
+    reception: { pos: [0, 7, 18], target: [0, 0.6, 10], btn: "cam-reception" },
+    meeting: { pos: [-11.5, 7, 18], target: [-11.5, 0.8, 10.5], btn: "cam-meeting" },
+    pantry: { pos: [11.5, 7, 18], target: [11.5, 0.8, 10.2], btn: "cam-pantry" },
+    exec: { pos: [-8.5, 9, -2], target: [-8.5, 0.8, -10], btn: null },
+    eng: { pos: [-8.5, 13, 9], target: [-8.5, 0.8, 0.5], btn: null },
+    mkt: { pos: [8, 11, 1], target: [8, 0.8, -7.5], btn: null },
+    admin: { pos: [8, 10, 11], target: [8, 0.8, 3.5], btn: null }
+  };
+  const v = views[zone] || views.overview;
+  camera.position.set(...v.pos);
+  controls.target.set(...v.target);
+  if (v.btn && document.getElementById(v.btn)) {
+    document.getElementById(v.btn).classList.add("active");
+  }
+}
+
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  document.getElementById('canvas-container').appendChild(renderer.domElement);
-  const controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  dirLight.position.set(15, 25, 15);
-  scene.add(dirLight);
-  const floor = new THREE.Mesh(new THREE.BoxGeometry(26, 0.4, 20), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
-  floor.position.y = -0.2;
-  scene.add(floor);
-  scene.add(new THREE.GridHelper(26, 26, 0x334155, 0x1e293b));
-  const meetTable = new THREE.Mesh(new THREE.BoxGeometry(5.5, 0.15, 2.2), new THREE.MeshStandardMaterial({ color: 0x0284c7 }));
-  meetTable.position.set(-5.5, 0.8, 8);
-  scene.add(meetTable);
-  function createLabel(name, role) {
-    const c = document.createElement('canvas'); c.width = 256; c.height = 96;
-    const ctx = c.getContext('2d');
-    ctx.fillStyle = 'rgba(15,23,42,0.88)'; ctx.fillRect(0, 0, 256, 96);
-    ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 4; ctx.strokeRect(2, 2, 252, 92);
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 26px Tahoma'; ctx.textAlign = 'center'; ctx.fillText(name, 128, 44);
-    ctx.fillStyle = '#38bdf8'; ctx.font = '16px Tahoma'; ctx.fillText(role.split('(')[0].trim(), 128, 72);
-    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c) }));
-    s.scale.set(2.8, 1.05, 1);
-    return s;
-  }
-  const clickables = [];
-  agents.forEach(ag => {
-    const g = new THREE.Group(); g.position.set(ag.x, 0, ag.z);
-    const desk = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.12, 1.1), new THREE.MeshStandardMaterial({ color: 0x334155 }));
-    desk.position.y = 0.75; g.add(desk);
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.35, 0.9, 16), new THREE.MeshStandardMaterial({ color: ag.color }));
-    body.position.set(0, 0.65, -0.55); body.userData = ag; g.add(body); clickables.push(body);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 16), new THREE.MeshStandardMaterial({ color: 0xfde68a }));
-    head.position.set(0, 1.3, -0.55); head.userData = ag; g.add(head); clickables.push(head);
-    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 12), new THREE.MeshBasicMaterial({ color: 0x4ade80 }));
-    dot.position.set(0, 1.75, -0.55); g.add(dot);
-    const lbl = createLabel(ag.name, ag.role); lbl.position.set(0, 2.4, -0.55); g.add(lbl);
-    scene.add(g);
-  });
-  const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
-  window.addEventListener('click', e => {
-    if (e.target.tagName !== 'CANVAS') return;
-    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-    raycaster.setFromCamera(mouse, camera);
-    const hits = raycaster.intersectObjects(clickables);
-    if (hits.length > 0) {
-      const ag = hits[0].object.userData;
-      document.getElementById('ag-name').innerText = ag.name;
-      document.getElementById('ag-role').innerText = `${ag.role} — ${ag.dept}`;
-      document.getElementById('ag-desc').innerText = ag.desc;
-      document.getElementById('agent-card').style.display = 'block';
-    }
-  });
-  function closeAgentCard() { document.getElementById('agent-card').style.display = 'none'; }
-  function sendDirectTask() {
-    const t = document.getElementById('ag-task').value.trim();
-    if (!t) return;
-    alert(`تم إرسال المهمة إلى ${document.getElementById('ag-name').innerText}: ${t}`);
-    document.getElementById('ag-task').value = '';
-  }
-  function setCameraView(m) {
-    document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active'));
-    if (m === 'iso') { camera.position.set(0, 22, 24); controls.target.set(0, 0, 0); document.getElementById('btn-iso').classList.add('active'); }
-    else if (m === 'top') { camera.position.set(0, 32, 0.1); controls.target.set(0, 0, 0); document.getElementById('btn-top').classList.add('active'); }
-    else if (m === 'meeting') { camera.position.set(-5.5, 8, 15); controls.target.set(-5.5, 0.8, 8); document.getElementById('btn-meeting').classList.add('active'); }
-  }
-  function toggleApprovals(s) { document.getElementById('approval-modal').style.display = s ? 'flex' : 'none'; }
-  function approveItem(id) { document.getElementById(id).style.display = 'none'; }
-  window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
-  (function loop() { requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); })();
+});
+
+(function renderLoop() {
+  requestAnimationFrame(renderLoop);
+  controls.update();
+  renderer.render(scene, camera);
+})();
 </script>
 </body>
 </html>
