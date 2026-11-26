@@ -3,50 +3,52 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MODEL Studio OS — مكتب الديكور والهندسة</title>
+<title>MODEL Studio OS v7.0 — مكتب الديكور والهندسة</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
-  html, body { width: 100%; height: 100%; overflow: hidden; background: #090d16; color: #f8fafc; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #070b12; color: #f8fafc; }
   #scene-host { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; }
 
   .topbar {
-    position: fixed; top: 12px; left: 12px; right: 12px; min-height: 52px;
-    background: rgba(12, 18, 28, 0.92); backdrop-filter: blur(14px);
-    border: 1px solid rgba(212, 175, 55, 0.32); border-radius: 14px;
-    padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
-    z-index: 30;
+    position: fixed; top: 10px; left: 10px; right: 10px; min-height: 50px;
+    background: rgba(11, 17, 27, 0.92); backdrop-filter: blur(16px);
+    border: 1px solid rgba(212, 175, 55, 0.35); border-radius: 14px;
+    padding: 7px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    z-index: 30; box-shadow: 0 12px 32px rgba(0,0,0,0.5);
   }
-  .title { font-size: 14px; font-weight: 800; color: #d4af37; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .badge-ver { background: rgba(212,175,55,0.18); color: #facc15; border: 1px solid rgba(212,175,55,0.45); padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+  .title { font-size: 14px; font-weight: 800; color: #f8fafc; }
   .btns { display: flex; gap: 6px; flex-wrap: wrap; }
   .btn {
-    background: #162032; color: #f8fafc; border: 1px solid rgba(148,163,184,0.22);
-    padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;
+    background: #152033; color: #f8fafc; border: 1px solid rgba(148,163,184,0.22);
+    padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.15s;
   }
-  .btn:hover { border-color: #d4af37; }
-  .btn.gold { background: #d4af37; color: #090d16; border-color: #d4af37; }
+  .btn:hover { border-color: #d4af37; background: #1d2b44; }
+  .btn.gold { background: linear-gradient(135deg, #d4af37, #b48c19); color: #090d16; border: none; font-weight: 800; }
 
   .sidebar {
-    position: fixed; top: 76px; right: 12px; bottom: 12px; width: 265px;
-    background: rgba(12, 18, 28, 0.92); backdrop-filter: blur(14px);
+    position: fixed; top: 72px; right: 10px; bottom: 10px; width: 270px;
+    background: rgba(11, 17, 27, 0.92); backdrop-filter: blur(16px);
     border: 1px solid rgba(148,163,184,0.18); border-radius: 16px;
     padding: 12px; z-index: 20; overflow-y: auto;
   }
   .sec { font-size: 11px; color: #d4af37; font-weight: 800; margin-bottom: 6px; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
-  .dept { font-size: 11.5px; font-weight: 700; color: #e2e8f0; background: #182336; border-right: 3px solid #d4af37; padding: 5px 8px; border-radius: 6px; margin: 8px 0 5px; }
+  .dept { font-size: 11.5px; font-weight: 700; color: #e2e8f0; background: #182438; border-right: 3px solid #d4af37; padding: 5px 8px; border-radius: 6px; margin: 8px 0 5px; }
   .emp {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 6px 8px; border-radius: 8px; background: #121b2b; margin-bottom: 4px; cursor: pointer; font-size: 12px;
+    padding: 6px 8px; border-radius: 8px; background: #121c2d; margin-bottom: 4px; cursor: pointer; font-size: 12px;
     border: 1px solid transparent;
   }
   .emp:hover, .emp.active { border-color: #d4af37; background: rgba(212,175,55,0.16); }
 
   .drawer {
-    position: fixed; top: 76px; left: 12px; bottom: 12px; width: 420px; max-width: calc(100vw - 295px);
-    background: rgba(11, 16, 26, 0.96); border: 1px solid rgba(212,175,55,0.38);
+    position: fixed; top: 72px; left: 10px; bottom: 10px; width: 430px; max-width: calc(100vw - 298px);
+    background: rgba(10, 15, 25, 0.96); border: 1px solid rgba(212,175,55,0.38);
     border-radius: 16px; z-index: 28; display: none; flex-direction: column; overflow: hidden;
   }
-  .d-head { padding: 12px 14px; background: #141e30; border-bottom: 1px solid rgba(148,163,184,0.15); display: flex; justify-content: space-between; align-items: flex-start; }
+  .d-head { padding: 12px 14px; background: #141f33; border-bottom: 1px solid rgba(148,163,184,0.15); display: flex; justify-content: space-between; align-items: flex-start; }
   .d-tabs { display: flex; border-bottom: 1px solid rgba(148,163,184,0.15); }
   .d-tab { flex: 1; padding: 8px; font-size: 11.5px; font-weight: 700; background: transparent; color: #94a3b8; border: none; cursor: pointer; }
   .d-tab.active { color: #d4af37; border-bottom: 2px solid #d4af37; background: rgba(212,175,55,0.08); }
@@ -55,13 +57,13 @@
   .msgs { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
   .msg { padding: 8px 11px; border-radius: 10px; font-size: 12px; line-height: 1.55; white-space: pre-wrap; max-width: 90%; }
   .msg.u { align-self: flex-start; background: #1d4ed8; color: #fff; }
-  .msg.a { align-self: flex-end; background: #1a2538; color: #f1f5f9; border: 1px solid rgba(148,163,184,0.16); }
+  .msg.a { align-self: flex-end; background: #1a263b; color: #f1f5f9; border: 1px solid rgba(148,163,184,0.16); }
   .row { display: flex; gap: 6px; }
-  .inp, .ta, .sel { width: 100%; background: #141f32; color: #fff; border: 1px solid rgba(148,163,184,0.22); border-radius: 8px; padding: 7px 9px; font-size: 12px; }
-  .box { background: #141f32; border: 1px solid rgba(148,163,184,0.15); border-radius: 10px; padding: 10px; font-size: 12px; line-height: 1.55; }
+  .inp, .ta, .sel { width: 100%; background: #142034; color: #fff; border: 1px solid rgba(148,163,184,0.22); border-radius: 8px; padding: 7px 9px; font-size: 12px; }
+  .box { background: #142034; border: 1px solid rgba(148,163,184,0.15); border-radius: 10px; padding: 10px; font-size: 12px; line-height: 1.55; }
 
-  .modal-bg { position: fixed; inset: 0; background: rgba(3,6,12,0.78); display: none; align-items: center; justify-content: center; z-index: 50; padding: 14px; }
-  .modal-box { width: 100%; max-width: 560px; max-height: 85vh; overflow-y: auto; background: #0e1522; border: 1px solid rgba(212,175,55,0.4); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .modal-bg { position: fixed; inset: 0; background: rgba(3,6,12,0.8); display: none; align-items: center; justify-content: center; z-index: 50; padding: 14px; }
+  .modal-box { width: 100%; max-width: 580px; max-height: 86vh; overflow-y: auto; background: #0e1624; border: 1px solid rgba(212,175,55,0.4); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
   #err-banner { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); background: #7f1d1d; color: #fecaca; border: 1px solid #ef4444; padding: 8px 14px; border-radius: 10px; font-size: 12px; z-index: 60; display: none; }
 </style>
 </head>
@@ -70,7 +72,10 @@
 <div id="scene-host"></div>
 
 <div class="topbar">
-  <div class="title">🏛️ MODEL STUDIO OS — مكتب الديكور والهندسة</div>
+  <div class="brand">
+    <div class="title">🏛️ MODEL STUDIO — مكتب الديكور والهندسة</div>
+    <span class="badge-ver">v7.0 • Gemini Connected</span>
+  </div>
   <div class="btns">
     <button class="btn gold" onclick="camPreset('overview')">منظور عام</button>
     <button class="btn" onclick="camPreset('top')">علوي</button>
@@ -79,7 +84,7 @@
     <button class="btn" onclick="camPreset('pantry')">البوفيه</button>
     <button class="btn gold" onclick="openM('m-cast')">📢 أمر عام</button>
     <button class="btn" onclick="openM('m-meet')">🤝 اجتماع</button>
-    <button class="btn" onclick="openM('m-ai')">⚡ AI Key</button>
+    <button class="btn" onclick="openM('m-ai')">⚡ Gemini API</button>
   </div>
 </div>
 
@@ -162,9 +167,11 @@
 
 <div class="modal-bg" id="m-ai">
   <div class="modal-box">
-    <div style="display:flex;justify-content:space-between;align-items:center;"><strong style="color:#d4af37;">⚡ ربط Gemini API</strong><button class="btn" onclick="closeM('m-ai')">✕</button></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;"><strong style="color:#d4af37;">⚡ إعدادات Gemini API</strong><button class="btn" onclick="closeM('m-ai')">✕</button></div>
+    <p style="font-size:11.5px;color:#94a3b8;line-height:1.55;">أدخل مفتاح Gemini API الذي فعّلته من Google Cloud / AI Studio لربط شخصيات الموظفين الـ 15 بالذكاء الاصطناعي الحقيقي.</p>
     <input class="inp" type="password" id="ai-key" placeholder="AIzaSy...">
-    <button class="btn gold" onclick="saveKey()">حفظ المفتاح</button>
+    <input class="inp" type="text" id="ai-model" value="gemini-2.5-flash" placeholder="gemini-2.5-flash">
+    <button class="btn gold" onclick="saveKey()">حفظ وتفعيل Gemini</button>
   </div>
 </div>
 
@@ -173,43 +180,110 @@
 <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
+// بيانات الكادر مع تنوع الملابس، ألوان البشرة، الشعر، الأطوال، والحجام
 const STAFF = [
-  { id:"tareq", name:"م. طارق", role:"المدير العام", dept:"الإدارة العليا", rank:"قيادي", lvl:5, active:true, persona:"حازم واستراتيجي، يركز على التميز والسمعة والعائد طويل المدى.", exp:"قيادة المكاتب الهندسية، التوسع، الحوكمة، والشراكات.", skills:["القيادة الاستراتيجية","الحوكمة"], x:-11.5, z:-8.5, col:0xd4af37 },
-  { id:"rami", name:"م. رامي", role:"المدير التنفيذي", dept:"الإدارة العليا", rank:"تنفيذي أول", lvl:5, active:true, persona:"عملي ومنضبط، يضبط الإيقاع اليومي والموارد والجداول الزمنية.", exp:"إدارة العمليات، جدولة التنفيذ، الكفاءة التشغيلية.", skills:["إدارة العمليات","الجدولة"], x:-6.5, z:-8.5, col:0x38bdf8 },
-  { id:"lina", name:"م. لينا", role:"مديرة المشاريع", dept:"الإدارة العليا", rank:"قيادي", lvl:4, active:true, persona:"دقيقة ومنظمة، تربط بين التصميم والتنفيذ والتسليم.", exp:"إدارة المشاريع، تنسيق التخصصات، متابعة المراحل.", skills:["إدارة المشاريع","التنسيق"], x:-1.5, z:-8.5, col:0xf472b6 },
-  { id:"karim", name:"م. كريم", role:"مهندس معماري", dept:"القسم الهندسي", rank:"أول", lvl:4, active:true, persona:"يهتم بالكتلة والفراغ والضوء الطبيعي والوظيفة المعمارية.", exp:"التصميم المعماري، دراسة الفراغات، المخططات التنفيذية.", skills:["التصميم المعماري","الفراغات"], x:-12, z:-1.5, col:0x10b981 },
-  { id:"hani", name:"م. هاني", role:"مهندس مدني وإنشائي", dept:"القسم الهندسي", rank:"أول", lvl:4, active:true, persona:"رصين ودقيق في الأنظمة الإنشائية والأحمال والسلامة.", exp:"التحليل والنظام الإنشائي، دراسة الأحمال، المواصفات.", skills:["الأنظمة الإنشائية","الأحمال"], x:-7.5, z:-1.5, col:0x0ea5e9 },
-  { id:"salma", name:"م. سلمى", role:"مصممة ديكور داخلي", dept:"القسم الهندسي", rank:"أول", lvl:4, active:true, persona:"حساسة للخامات والإضاءة والألوان وتناغم الفراغ الداخلي.", exp:"التصميم الداخلي، الخامات والتشطيبات، الإضاءة الداخلية.", skills:["الديكور الداخلي","الخامات والإضاءة"], x:-3, z:-1.5, col:0xf59e0b },
-  { id:"ziad", name:"م. زياد", role:"مصمم واجهات وديكور خارجي", dept:"القسم الهندسي", rank:"متخصص", lvl:3, active:true, persona:"يركز على الواجهات والمداخل وتكامل المشهد الخارجي.", exp:"تصميم الواجهات، الديكور الخارجي، المساحات الخارجية.", skills:["الواجهات","الديكور الخارجي"], x:-12, z:3.5, col:0x34d399 },
-  { id:"nader", name:"م. نادر", role:"مهندس كميات وتكاليف (BOQ)", dept:"القسم الهندسي", rank:"أول", lvl:4, active:true, persona:"رقمي ومدقق في حصر الكميات وجداول التكاليف والبدائل.", exp:"حصر الكميات، جداول BOQ، تحليل الأسعار والتكاليف.", skills:["حصر الكميات","BOQ"], x:-7.5, z:3.5, col:0xa78bfa },
-  { id:"bilal", name:"م. بلال", role:"مهندس إشراف وموقع", dept:"القسم الهندسي", rank:"متخصص", lvl:3, active:true, persona:"ميداني ويقظ، يطابق التنفيذ الفعلي مع المخططات والمواصفات.", exp:"الإشراف الهندسي، متابعة الموقع، فحص المطابقة.", skills:["الإشراف الميداني","جودة التنفيذ"], x:-3, z:3.5, col:0x2dd4bf },
-  { id:"nadeem", name:"م. نديم", role:"مستقطب المشاريع", dept:"الاستقطاب والتسويق", rank:"أول", lvl:4, active:true, persona:"استباقي في اقتناص الفرص وصياغة العروض للعملاء.", exp:"استقطاب المشاريع، دراسة الفرص، كتابة العروض.", skills:["اقتناص الفرص","العروض"], x:5.5, z:-8.5, col:0xfbbf24 },
-  { id:"adam", name:"آدم", role:"مدير السوشيال ميديا", dept:"الاستقطاب والتسويق", rank:"متخصص", lvl:3, active:true, persona:"منظم في جدولة النشر ومتابعة التفاعل والمنصات.", exp:"إدارة المنصات، جدولة المحتوى، متابعة التفاعل.", skills:["السوشيال ميديا","الجدولة"], x:10.5, z:-8.5, col:0xfb923c },
-  { id:"yara", name:"يارا", role:"أخصائية التسويق والمحتوى", dept:"الاستقطاب والتسويق", rank:"متخصص", lvl:3, active:true, persona:"تصوغ الرسائل التسويقية وسابقة الأعمال بوضوح وإقناع.", exp:"كتابة المحتوى، الرسائل التسويقية، عرض المشاريع.", skills:["المحتوى","الهوية التسويقية"], x:8, z:-4, col:0xf43f5e },
-  { id:"dana", name:"دانا", role:"الموارد البشرية (HR)", dept:"الإدارة المساندة", rank:"متخصص", lvl:3, active:true, persona:"تنظم الأدوار وتوازن المهام وتتابع الأداء والكفاءات.", exp:"تحديد الأدوار، تقييم الأداء، تطوير الكفاءات.", skills:["الموارد البشرية","تقييم الأداء"], x:5.5, z:2.5, col:0xc084fc },
-  { id:"fouad", name:"أ. فؤاد", role:"المستشار القانوني", dept:"الإدارة المساندة", rank:"مستشار", lvl:4, active:true, persona:"يدقق في العقود والالتزامات ويحمي حقوق المكتب.", exp:"مراجعة العقود، إدارة المخاطر، الصياغات النظامية.", skills:["العقود","المخاطر"], x:10.5, z:2.5, col:0x818cf8 },
-  { id:"samar", name:"سمر", role:"المحاسبة والمالية", dept:"الإدارة المساندة", rank:"متخصص", lvl:3, active:true, persona:"تضبط التدفقات النقدية والفواتير والميزانيات بدقة.", exp:"المحاسبة المالية، التدفقات، الفوترة والتقارير.", skills:["المحاسبة","التدفق المالي"], x:8, z:7, col:0x22d3ee }
+  { id:"tareq", name:"م. طارق", role:"المدير العام", dept:"الإدارة العليا", rank:"قيادي", lvl:5, active:true,
+    persona:"حازم واستراتيجي، يركز على التميز والسمعة والعائد طويل المدى.",
+    exp:"قيادة المكاتب الهندسية، التوسع، الحوكمة، والشراكات.", skills:["القيادة الاستراتيجية","الحوكمة"],
+    x:-12, z:-9, suit:0x1e293b, shirt:0xf8fafc, tie:0xd4af37, skin:0xe0ac69, hair:0x1e1b18, hairStyle:"short", scaleY:1.06, bulk:1.12 },
+
+  { id:"rami", name:"م. رامي", role:"المدير التنفيذي", dept:"الإدارة العليا", rank:"تنفيذي أول", lvl:5, active:true,
+    persona:"عملي ومنضبط، يضبط الإيقاع اليومي والموارد والجداول الزمنية.",
+    exp:"إدارة العمليات، جدولة التنفيذ، الكفاءة التشغيلية.", skills:["إدارة العمليات","الجدولة"],
+    x:-6.8, z:-9, suit:0x1e3a5f, shirt:0xe2e8f0, tie:0x38bdf8, skin:0xf1c27d, hair:0x292524, hairStyle:"buzz", scaleY:1.02, bulk:1.04 },
+
+  { id:"lina", name:"م. لينا", role:"مديرة المشاريع", dept:"الإدارة العليا", rank:"قيادي", lvl:4, active:true,
+    persona:"دقيقة ومنظمة، تربط بين التصميم والتنفيذ والتسليم.",
+    exp:"إدارة المشاريع، تنسيق التخصصات، متابعة المراحل.", skills:["إدارة المشاريع","التنسيق"],
+    x:-1.6, z:-9, suit:0x3b2f4a, shirt:0xfff1f2, tie:0xf472b6, skin:0xf5cba7, hair:0x4a2511, hairStyle:"long", scaleY:0.97, bulk:0.94 },
+
+  { id:"karim", name:"م. كريم", role:"مهندس معماري", dept:"القسم الهندسي", rank:"أول", lvl:4, active:true,
+    persona:"يهتم بالكتلة والفراغ والضوء الطبيعي والوظيفة المعمارية.",
+    exp:"التصميم المعماري، دراسة الفراغات، المخططات التنفيذية.", skills:["التصميم المعماري","الفراغات"],
+    x:-12.5, z:-2, suit:0x27272a, shirt:0xf4f4f5, tie:0x10b981, skin:0xd49b6a, hair:0x18181b, hairStyle:"side", scaleY:1.04, bulk:1.0 },
+
+  { id:"hani", name:"م. هاني", role:"مهندس مدني وإنشائي", dept:"القسم الهندسي", rank:"أول", lvl:4, active:true,
+    persona:"رصين ودقيق في الأنظمة الإنشائية والأحمال والسلامة.",
+    exp:"التحليل والنظام الإنشائي، دراسة الأحمال، المواصفات.", skills:["الأنظمة الإنشائية","الأحمال"],
+    x:-7.5, z:-2, suit:0x1f2937, shirt:0xf9fafb, tie:0x0ea5e9, skin:0xc68642, hair:0x111827, hairStyle:"buzz", scaleY:1.05, bulk:1.15 },
+
+  { id:"salma", name:"م. سلمى", role:"مصممة ديكور داخلي", dept:"القسم الهندسي", rank:"أول", lvl:4, active:true,
+    persona:"حساسة للخامات والإضاءة والألوان وتناغم الفراغ الداخلي.",
+    exp:"التصميم الداخلي، الخامات والتشطيبات، الإضاءة الداخلية.", skills:["الديكور الداخلي","الخامات والإضاءة"],
+    x:-2.5, z:-2, suit:0x3f2e26, shirt:0xfef3c7, tie:0xf59e0b, skin:0xf1c27d, hair:0x3f1d0b, hairStyle:"long", scaleY:0.95, bulk:0.92 },
+
+  { id:"ziad", name:"م. زياد", role:"مصمم واجهات وديكور خارجي", dept:"القسم الهندسي", rank:"متخصص", lvl:3, active:true,
+    persona:"يركز على الواجهات والمداخل وتكامل المشهد الخارجي.",
+    exp:"تصميم الواجهات، الديكور الخارجي، المساحات الخارجية.", skills:["الواجهات","الديكور الخارجي"],
+    x:-12.5, z:3.5, suit:0x1e293b, shirt:0xf8fafc, tie:0x34d399, skin:0x8d5524, hair:0x09090b, hairStyle:"short", scaleY:1.01, bulk:1.03 },
+
+  { id:"nader", name:"م. نادر", role:"مهندس كميات وتكاليف (BOQ)", dept:"القسم الهندسي", rank:"أول", lvl:4, active:true,
+    persona:"رقمي ومدقق في حصر الكميات وجداول التكاليف والبدائل.",
+    exp:"حصر الكميات، جداول BOQ، تحليل الأسعار والتكاليف.", skills:["حصر الكميات","BOQ"],
+    x:-7.5, z:3.5, suit:0x292524, shirt:0xf5f5f4, tie:0xa78bfa, skin:0xe0ac69, hair:0x57534e, hairStyle:"side", scaleY:0.99, bulk:1.08 },
+
+  { id:"bilal", name:"م. بلال", role:"مهندس إشراف وموقع", dept:"القسم الهندسي", rank:"متخصص", lvl:3, active:true,
+    persona:"ميداني ويقظ، يطابق التنفيذ الفعلي مع المخططات والمواصفات.",
+    exp:"الإشراف الهندسي، متابعة الموقع، فحص المطابقة.", skills:["الإشراف الميداني","جودة التنفيذ"],
+    x:-2.5, z:3.5, suit:0x1c2536, shirt:0xe2e8f0, tie:0x2dd4bf, skin:0xc68642, hair:0x1c1917, hairStyle:"buzz", scaleY:1.03, bulk:1.07 },
+
+  { id:"nadeem", name:"م. نديم", role:"مستقطب المشاريع", dept:"الاستقطاب والتسويق", rank:"أول", lvl:4, active:true,
+    persona:"استباقي في اقتناص الفرص وصياغة العروض للعملاء.",
+    exp:"استقطاب المشاريع، دراسة الفرص، كتابة العروض.", skills:["اقتناص الفرص","العروض"],
+    x:5.5, z:-9, suit:0x1e293b, shirt:0xffffff, tie:0xfbbf24, skin:0xf1c27d, hair:0x27272a, hairStyle:"short", scaleY:1.04, bulk:1.02 },
+
+  { id:"adam", name:"آدم", role:"مدير السوشيال ميديا", dept:"الاستقطاب والتسويق", rank:"متخصص", lvl:3, active:true,
+    persona:"منظم في جدولة النشر ومتابعة التفاعل والمنصات.",
+    exp:"إدارة المنصات، جدولة المحتوى، متابعة التفاعل.", skills:["السوشيال ميديا","الجدولة"],
+    x:11, z:-9, suit:0x27303f, shirt:0xf1f5f9, tie:0xfb923c, skin:0xe0ac69, hair:0x1f1b18, hairStyle:"side", scaleY:0.98, bulk:0.96 },
+
+  { id:"yara", name:"يارا", role:"أخصائية التسويق والمحتوى", dept:"الاستقطاب والتسويق", rank:"متخصص", lvl:3, active:true,
+    persona:"تصوغ الرسائل التسويقية وسابقة الأعمال بوضوح وإقناع.",
+    exp:"كتابة المحتوى، الرسائل التسويقية، عرض المشاريع.", skills:["المحتوى","الهوية التسويقية"],
+    x:8.2, z:-4.2, suit:0x3b2836, shirt:0xfff1f2, tie:0xf43f5e, skin:0xf5cba7, hair:0x2d160c, hairStyle:"long", scaleY:0.96, bulk:0.93 },
+
+  { id:"dana", name:"دانا", role:"الموارد البشرية (HR)", dept:"الإدارة المساندة", rank:"متخصص", lvl:3, active:true,
+    persona:"تنظم الأدوار وتوازن المهام وتتابع الأداء والكفاءات.",
+    exp:"تحديد الأدوار، تقييم الأداء، تطوير الكفاءات.", skills:["الموارد البشرية","تقييم الأداء"],
+    x:5.5, z:2.2, suit:0x2e2942, shirt:0xf8fafc, tie:0xc084fc, skin:0xe0ac69, hair:0x3b1f12, hairStyle:"long", scaleY:0.98, bulk:0.95 },
+
+  { id:"fouad", name:"أ. فؤاد", role:"المستشار القانوني", dept:"الإدارة المساندة", rank:"مستشار", lvl:4, active:true,
+    persona:"يدقق في العقود والالتزامات ويحمي حقوق المكتب.",
+    exp:"مراجعة العقود، إدارة المخاطر، الصياغات النظامية.", skills:["العقود","المخاطر"],
+    x:11, z:2.2, suit:0x18181b, shirt:0xfafafa, tie:0x818cf8, skin:0xd49b6a, hair:0x71717a, hairStyle:"side", scaleY:1.02, bulk:1.09 },
+
+  { id:"samar", name:"سمر", role:"المحاسبة والمالية", dept:"الإدارة المساندة", rank:"متخصص", lvl:3, active:true,
+    persona:"تضبط التدفقات النقدية والفواتير والميزانيات بدقة.",
+    exp:"المحاسبة المالية، التدفقات، الفوترة والتقارير.", skills:["المحاسبة","التدفق المالي"],
+    x:8.2, z:6.8, suit:0x1e2e3b, shirt:0xf0f9ff, tie:0x22d3ee, skin:0xf1c27d, hair:0x261710, hairStyle:"long", scaleY:0.96, bulk:0.94 }
 ];
 
 const mem = {};
-const sharedLog = ["تأسيس مقر MODEL الهندسي والديكور بكافة أقسامه."];
+const sharedLog = ["تأسيس مقر MODEL الهندسي والديكور بسور خارجي وفواصل زجاجية ومكاتب عمل متكاملة."];
 let geminiKey = localStorage.getItem("model_gemini_key") || "";
+let geminiModel = localStorage.getItem("model_gemini_model") || "gemini-2.5-flash";
+
 STAFF.forEach(s => {
   mem[s.id] = { chats: [{ who:"a", text:`أهلاً أستاذ حازم. أنا ${s.name} (${s.role}).\n${s.persona}` }], fb: [] };
 });
 
 let curId = null;
-const avatarBodies = {};
+const avatarGroups = {};
 let camera, controls;
 
 function openM(id) {
-  if (id === "m-ai") document.getElementById("ai-key").value = geminiKey;
+  if (id === "m-ai") {
+    document.getElementById("ai-key").value = geminiKey;
+    document.getElementById("ai-model").value = geminiModel;
+  }
   document.getElementById(id).style.display = "flex";
 }
 function closeM(id) { document.getElementById(id).style.display = "none"; }
 function saveKey() {
   geminiKey = document.getElementById("ai-key").value.trim();
+  geminiModel = document.getElementById("ai-model").value.trim() || "gemini-2.5-flash";
   localStorage.setItem("model_gemini_key", geminiKey);
+  localStorage.setItem("model_gemini_model", geminiModel);
   closeM("m-ai");
 }
 
@@ -242,8 +316,8 @@ function selectEmp(id, moveCam) {
   renderMsgs(); renderProf(); renderFb();
   document.getElementById("drawer").style.display = "flex";
   if (moveCam && camera && controls) {
-    controls.target.set(s.x, 1, s.z);
-    camera.position.set(s.x + 4.5, 5.2, s.z + 6.5);
+    controls.target.set(s.x, 1.0, s.z);
+    camera.position.set(s.x + 3.8, 3.6, s.z + 5.2);
   }
 }
 
@@ -258,20 +332,31 @@ function openSub(tab) {
 async function askAgent(s, userMsg) {
   if (!s.active) return "الحساب موقوف حالياً لإنهاء الخدمة.";
   const fbText = mem[s.id].fb.join(" | ");
+  const peers = STAFF.filter(p => p.id !== s.id && p.active).slice(0, 4).map(p => `${p.name} (${p.role}): ${p.persona}`).join(" ; ");
   if (geminiKey) {
     try {
-      const prompt = `أنت ${s.name} (${s.role} في ${s.dept}) بمكتب MODEL للديكور والهندسة. شخصيتك: ${s.persona}. خبراتك: ${s.exp} (${s.skills.join("، ")}). ملاحظات المدير لك: ${fbText || "لا يوجد"}. سجل المكتب: ${sharedLog.slice(0,4).join(" | ")}. أجب برأيك المهني المباشر على: ${userMsg}`;
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(geminiKey)}`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
+      const prompt = `أنت ${s.name} وتعمل بصفة ${s.role} في قسم ${s.dept} داخل مكتب MODEL للديكور والهندسة.
+شخصيتك: ${s.persona}
+خبراتك ومهاراتك: ${s.exp} (${s.skills.join("، ")})
+تغذية راجعة من المدير حازم: ${fbText || "لا يوجد"}
+تفاعل مع آراء زملائك: ${peers}
+ذاكرة المكتب المشتركة: ${sharedLog.slice(0, 5).join(" | ")}
+أجب بالعربية بأسلوب عملي ومباشر وبشخصيتك المستقلة على: ${userMsg}`;
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(geminiModel)}:generateContent?key=${encodeURIComponent(geminiKey)}`;
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
       });
       const j = await r.json();
       const out = j?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (out) return out.trim();
+      if (j?.error?.message) return `تنبيه من Gemini API: ${j.error.message}`;
     } catch (e) {}
   }
-  const fbNote = fbText ? `\n• مع مراعاة ملاحظتك: "${mem[s.id].fb[0]}"` : "";
-  return `بصفتي ${s.name} (${s.role})، رأيي حول "${userMsg}":\n• ${s.persona}\n• سأتعامل مع الملف عبر (${s.skills.join(" و ")}).${fbNote}`;
+  const fbNote = fbText ? `\n• مع الأخذ بملاحظتك الأخيرة: "${mem[s.id].fb[0]}"` : "";
+  return `بصفتي ${s.name} (${s.role})، رأيي حول "${userMsg}":\n• ${s.persona}\n• سأعمل وفق تخصصي في (${s.skills.join(" و ")}).${fbNote}`;
 }
 
 function renderMsgs() {
@@ -292,7 +377,7 @@ async function sendChat() {
   renderMsgs();
   const rep = await askAgent(s, txt);
   mem[curId].chats.push({ who:"a", text: rep });
-  sharedLog.unshift(`حوار ${s.name}: ${txt.slice(0,50)}`);
+  sharedLog.unshift(`حوار ${s.name}: ${txt.slice(0,55)}`);
   renderMsgs();
 }
 
@@ -312,6 +397,7 @@ function addFeedback() {
   const v = ta.value.trim();
   if (!v || !curId) return;
   mem[curId].fb.unshift(v);
+  sharedLog.unshift(`تغذية راجعة لـ ${STAFF.find(x=>x.id===curId).name}: ${v.slice(0,50)}`);
   ta.value = ""; renderFb();
 }
 function renderFb() {
@@ -321,7 +407,7 @@ function doHr(type) {
   if (!curId) return;
   const s = STAFF.find(x => x.id === curId);
   if (type === "promote") { s.lvl += 1; s.rank = s.lvl >= 5 ? "قيادي" : "أول"; sharedLog.unshift(`ترقية ${s.name} إلى درجة ${s.lvl}`); }
-  if (type === "reward") { mem[curId].chats.push({ who:"a", text:"شكراً أستاذ حازم على المكافأة والتحفيز." }); sharedLog.unshift(`مكافأة لـ ${s.name}`); }
+  if (type === "reward") { mem[curId].chats.push({ who:"a", text:"شكراً أستاذ حازم على المكافأة والتحفيز، سنواصل رفع جودة العمل." }); sharedLog.unshift(`مكافأة لـ ${s.name}`); }
   if (type === "fire") { s.active = !s.active; sharedLog.unshift(`${s.active?"إعادة":"إنهاء"} خدمة ${s.name}`); }
   renderNav(); selectEmp(s.id, false);
 }
@@ -359,19 +445,182 @@ async function runMeeting() {
 function camPreset(p) {
   if (!camera || !controls) return;
   const map = {
-    overview: [[0, 22, 26], [0, 0, 0]],
-    top: [[0, 36, 0.1], [0, 0, 0]],
-    reception: [[0, 6, 17], [0, 0.7, 10]],
-    meeting: [[-11.5, 6, 17], [-11.5, 0.8, 10.5]],
-    pantry: [[11.5, 6, 17], [11.5, 0.8, 9.8]],
-    exec: [[-6.5, 7.5, -1.5], [-6.5, 0.8, -8.5]],
-    eng: [[-7.5, 11.5, 8.5], [-7.5, 0.8, 1]],
-    mkt: [[8, 9.5, 0.5], [8, 0.8, -7]],
-    admin: [[8, 9.5, 11.5], [8, 0.8, 4]]
+    overview: [[0, 22, 27], [0, 0, 0]],
+    top: [[0, 38, 0.1], [0, 0, 0]],
+    reception: [[0, 5.5, 17.5], [0, 0.8, 10.5]],
+    meeting: [[-11.5, 5.5, 17.5], [-11.5, 0.8, 10.8]],
+    pantry: [[11.5, 5.5, 17.5], [11.5, 0.8, 10.2]],
+    exec: [[-7, 6.5, -2], [-7, 0.9, -9]],
+    eng: [[-7.5, 10.5, 8.5], [-7.5, 0.9, 0.8]],
+    mkt: [[8.5, 8.5, 0.5], [8.5, 0.9, -7.2]],
+    admin: [[8.5, 8.5, 11.5], [8.5, 0.9, 3.8]]
   };
   const v = map[p] || map.overview;
   camera.position.set(...v[0]);
   controls.target.set(...v[1]);
+}
+
+// بناء شخصية إنسانية مفصلة (بدلة، قميص، ربطة عنق، رأس، عيون، شعر، أذرع وأيدي، أرجل وأقدام)
+function buildDetailedEmployee(s) {
+  const person = new THREE.Group();
+  // جلوس الموظف خلف المكتب
+  person.position.set(0, 0, -0.58);
+  person.scale.set(s.bulk, s.scaleY, s.bulk);
+
+  const suitMat = new THREE.MeshStandardMaterial({ color: s.suit, roughness: 0.55, metalness: 0.1 });
+  const shirtMat = new THREE.MeshStandardMaterial({ color: s.shirt, roughness: 0.6 });
+  const tieMat = new THREE.MeshStandardMaterial({ color: s.tie, roughness: 0.4 });
+  const skinMat = new THREE.MeshStandardMaterial({ color: s.skin, roughness: 0.65 });
+  const hairMat = new THREE.MeshStandardMaterial({ color: s.hair, roughness: 0.7 });
+  const shoeMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4 });
+
+  // الأرجل والأقدام (ثني الجلوس)
+  [-0.13, 0.13].forEach(lx => {
+    const thigh = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.42), suitMat);
+    thigh.position.set(lx, 0.46, -0.14);
+    thigh.castShadow = true;
+    person.add(thigh);
+
+    const shin = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.42, 0.13), suitMat);
+    shin.position.set(lx, 0.24, -0.32);
+    shin.castShadow = true;
+    person.add(shin);
+
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.08, 0.24), shoeMat);
+    shoe.position.set(lx, 0.04, -0.28);
+    person.add(shoe);
+  });
+
+  // الجذع والبدلة والقميص وربطة العنق
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.58, 0.26), suitMat);
+  torso.position.set(0, 0.78, 0);
+  torso.castShadow = true;
+  person.add(torso);
+
+  const shirt = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.54, 0.27), shirtMat);
+  shirt.position.set(0, 0.79, 0.005);
+  person.add(shirt);
+
+  const tie = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.34, 0.28), tieMat);
+  tie.position.set(0, 0.76, 0.01);
+  person.add(tie);
+
+  // الرقبة والرأس وتفاصيل الوجه والشعر
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.085, 0.12, 12), skinMat);
+  neck.position.set(0, 1.12, 0);
+  person.add(neck);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.19, 20, 20), skinMat);
+  head.position.set(0, 1.32, 0.02);
+  head.castShadow = true;
+  person.add(head);
+
+  // العيون والأنف
+  const eyeMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
+  [-0.065, 0.065].forEach(ex => {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.022, 10, 10), eyeMat);
+    eye.position.set(ex, 1.34, 0.2);
+    person.add(eye);
+  });
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.06, 8), skinMat);
+  nose.rotation.x = Math.PI / 2;
+  nose.position.set(0, 1.30, 0.21);
+  person.add(nose);
+
+  // الشعر حسب النمط
+  if (s.hairStyle === "long") {
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.202, 20, 20, 0, Math.PI * 2, 0, Math.PI * 0.65), hairMat);
+    cap.position.set(0, 1.33, 0.01);
+    person.add(cap);
+    const backHair = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.34, 0.12), hairMat);
+    backHair.position.set(0, 1.18, -0.13);
+    person.add(backHair);
+  } else if (s.hairStyle === "buzz") {
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.196, 18, 18, 0, Math.PI * 2, 0, Math.PI * 0.52), hairMat);
+    cap.position.set(0, 1.33, 0.02);
+    person.add(cap);
+  } else {
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.20, 18, 18, 0, Math.PI * 2, 0, Math.PI * 0.58), hairMat);
+    cap.position.set(0.02, 1.34, 0.01);
+    person.add(cap);
+  }
+
+  // الأذرع والأيدي الممتدة نحو المكتب/الكيبورد
+  [-0.31, 0.31].forEach(ax => {
+    const upperArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.34, 0.13), suitMat);
+    upperArm.position.set(ax, 0.86, 0.04);
+    upperArm.rotation.x = -0.35;
+    upperArm.castShadow = true;
+    person.add(upperArm);
+
+    const forearm = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.11, 0.30), shirtMat);
+    forearm.position.set(ax * 0.86, 0.76, 0.24);
+    person.add(forearm);
+
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.062, 12, 12), skinMat);
+    hand.position.set(ax * 0.82, 0.76, 0.40);
+    person.add(hand);
+  });
+
+  return person;
+}
+
+// بناء مكتب واقعي مع جهاز كمبيوتر وكيبورد وماوس وكرسي
+function buildDeskAndPC(s) {
+  const grp = new THREE.Group();
+  grp.position.set(s.x, 0, s.z);
+
+  const woodMat = new THREE.MeshStandardMaterial({ color: 0x543621, roughness: 0.42 });
+  const darkMetal = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.55, roughness: 0.35 });
+  const screenMat = new THREE.MeshStandardMaterial({ color: 0x0b1320, emissive: s.tie, emissiveIntensity: 0.28 });
+
+  // سطح المكتب والأرجل
+  const top = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.08, 1.05), woodMat);
+  top.position.set(0, 0.74, 0);
+  top.castShadow = true;
+  top.receiveShadow = true;
+  grp.add(top);
+
+  [-0.95, 0.95].forEach(lx => {
+    [-0.42, 0.42].forEach(lz => {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.72, 0.08), darkMetal);
+      leg.position.set(lx, 0.36, lz);
+      grp.add(leg);
+    });
+  });
+
+  // كرسي المكتب
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.08, 0.52), darkMetal);
+  seat.position.set(0, 0.45, -0.58);
+  grp.add(seat);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.52, 0.08), darkMetal);
+  back.position.set(0, 0.74, -0.82);
+  grp.add(back);
+
+  // شاشة الكمبيوتر وحاملها
+  const standBase = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.02, 0.16), darkMetal);
+  standBase.position.set(0, 0.79, 0.14);
+  const standNeck = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.16, 0.05), darkMetal);
+  standNeck.position.set(0, 0.87, 0.14);
+  const monitor = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.43, 0.04), screenMat);
+  monitor.position.set(0, 1.12, 0.14);
+  grp.add(standBase, standNeck, monitor);
+
+  // لوحة مفاتيح وماوس
+  const kbd = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.02, 0.15), darkMetal);
+  kbd.position.set(-0.06, 0.79, -0.14);
+  const mouse = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.03, 0.11), darkMetal);
+  mouse.position.set(0.32, 0.795, -0.14);
+  grp.add(kbd, mouse);
+
+  const person = buildDetailedEmployee(s);
+  person.traverse(obj => {
+    if (obj.isMesh) obj.userData.id = s.id;
+  });
+  grp.add(person);
+  avatarGroups[s.id] = person;
+
+  return grp;
 }
 
 function init3D() {
@@ -382,11 +631,13 @@ function init3D() {
     host.id = "scene-host";
     document.body.prepend(host);
   }
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x090d16);
 
-  camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.1, 200);
-  camera.position.set(0, 22, 26);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x070b12);
+  scene.fog = new THREE.FogExp2(0x070b12, 0.009);
+
+  camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.1, 220);
+  camera.position.set(0, 22, 27);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -399,75 +650,76 @@ function init3D() {
     controls.maxPolarAngle = Math.PI / 2.08;
   }
 
-  scene.add(new THREE.AmbientLight(0xe2e8f0, 0.75));
-  const dir = new THREE.DirectionalLight(0xfff7ed, 1.0);
+  scene.add(new THREE.AmbientLight(0xe2e8f0, 0.72));
+  const dir = new THREE.DirectionalLight(0xfff7ed, 1.05);
   dir.position.set(16, 28, 18);
   dir.castShadow = true;
   scene.add(dir);
 
-  const floor = new THREE.Mesh(new THREE.BoxGeometry(36, 0.4, 28), new THREE.MeshStandardMaterial({ color: 0x3b2618, roughness: 0.45 }));
+  // أرضية المقر الخشبية
+  const floor = new THREE.Mesh(
+    new THREE.BoxGeometry(36, 0.4, 28),
+    new THREE.MeshStandardMaterial({ color: 0x3b2618, roughness: 0.45 })
+  );
   floor.position.y = -0.2;
   floor.receiveShadow = true;
   scene.add(floor);
 
-  const grid = new THREE.GridHelper(36, 18, 0xd4af37, 0x1e293b);
-  grid.position.y = 0.01;
-  scene.add(grid);
-
-  const glassMat = new THREE.MeshStandardMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.18 });
-  const frameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
-  function addWall(x, z, w, d) {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, 2.2, d), glassMat);
-    m.position.set(x, 1.1, z);
-    const top = new THREE.Mesh(new THREE.BoxGeometry(w, 0.12, d), frameMat);
-    top.position.set(x, 2.2, z);
-    scene.add(m, top);
+  // سور خارجي محيط بالمقر
+  const fenceMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.45, roughness: 0.4 });
+  const capGold = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.6, roughness: 0.3 });
+  function addFenceSegment(x, z, w, d) {
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(w, 1.45, d), fenceMat);
+    wall.position.set(x, 0.725, z);
+    wall.castShadow = true;
+    wall.receiveShadow = true;
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(w + 0.08, 0.08, d + 0.08), capGold);
+    cap.position.set(x, 1.48, z);
+    scene.add(wall, cap);
   }
-  addWall(0.5, -4.8, 0.16, 8.5);
-  addWall(0.5, 4.8, 0.16, 7.5);
-  addWall(-6.5, 7.6, 14.5, 0.16);
-  addWall(6.8, 7.6, 10.5, 0.16);
+  addFenceSegment(0, -14, 36.2, 0.28);
+  addFenceSegment(-18, 0, 0.28, 28.2);
+  addFenceSegment(18, 0, 0.28, 28.2);
+  addFenceSegment(-9.5, 14, 17.2, 0.28);
+  addFenceSegment(9.5, 14, 17.2, 0.28);
 
-  const conf = new THREE.Mesh(new THREE.BoxGeometry(6.0, 0.14, 1.9), new THREE.MeshStandardMaterial({ color: 0x4a2e1b }));
-  conf.position.set(-11.5, 0.82, 10.5);
+  // جدران وفواصل زجاجية داخلية لتقسيم الأقسام والمناطق
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.17 });
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
+  function addDivider(x, z, w, d) {
+    const base = new THREE.Mesh(new THREE.BoxGeometry(w, 0.45, d), frameMat);
+    base.position.set(x, 0.225, z);
+    const glass = new THREE.Mesh(new THREE.BoxGeometry(w, 1.85, d), glassMat);
+    glass.position.set(x, 1.375, z);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(w, 0.08, d), frameMat);
+    top.position.set(x, 2.3, z);
+    scene.add(base, glass, top);
+  }
+  addDivider(0.5, -5.2, 0.16, 8.8);
+  addDivider(0.5, 4.6, 0.16, 7.6);
+  addDivider(-6.5, 7.6, 15.0, 0.16);
+  addDivider(6.8, 7.6, 11.0, 0.16);
+
+  // قاعة الاجتماعات، البوفيه، والاستقبال
+  const conf = new THREE.Mesh(new THREE.BoxGeometry(6.0, 0.12, 1.9), new THREE.MeshStandardMaterial({ color: 0x4a2e1b }));
+  conf.position.set(-11.5, 0.78, 10.8);
   scene.add(conf);
 
-  const pantry = new THREE.Mesh(new THREE.BoxGeometry(4.4, 1.0, 1.1), new THREE.MeshStandardMaterial({ color: 0x2c1d14 }));
-  pantry.position.set(11.5, 0.5, 9.2);
+  const pantry = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.98, 1.1), new THREE.MeshStandardMaterial({ color: 0x2c1d14 }));
+  pantry.position.set(11.5, 0.49, 9.8);
   scene.add(pantry);
 
-  const rec = new THREE.Mesh(new THREE.BoxGeometry(4.6, 1.05, 1.2), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
-  rec.position.set(0, 0.525, 10.2);
+  const rec = new THREE.Mesh(new THREE.BoxGeometry(4.6, 1.02, 1.2), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+  rec.position.set(0, 0.51, 10.5);
   scene.add(rec);
 
   const picks = [];
   STAFF.forEach(s => {
-    const grp = new THREE.Group();
-    grp.position.set(s.x, 0, s.z);
-
-    const desk = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.1, 1.0), new THREE.MeshStandardMaterial({ color: 0x5c3a21 }));
-    desk.position.y = 0.76;
-    grp.add(desk);
-
-    const scr = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.42, 0.05), new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: s.col, emissiveIntensity: 0.35 }));
-    scr.position.set(0, 1.02, 0.12);
-    grp.add(scr);
-
-    const mat = new THREE.MeshStandardMaterial({ color: s.col });
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.3, 0.82, 16), mat);
-    body.position.set(0, 0.72, -0.55);
-    body.userData.id = s.id;
-    grp.add(body);
-    picks.push(body);
-
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 16), new THREE.MeshStandardMaterial({ color: 0xf1c27d }));
-    head.position.set(0, 1.32, -0.55);
-    head.userData.id = s.id;
-    grp.add(head);
-    picks.push(head);
-
-    avatarBodies[s.id] = { mat, col: s.col };
-    scene.add(grp);
+    const deskGrp = buildDeskAndPC(s);
+    scene.add(deskGrp);
+    deskGrp.traverse(o => {
+      if (o.isMesh && o.userData.id) picks.push(o);
+    });
   });
 
   const ray = new THREE.Raycaster();
@@ -490,7 +742,7 @@ function init3D() {
   (function animate() {
     requestAnimationFrame(animate);
     STAFF.forEach(s => {
-      if (avatarBodies[s.id]) avatarBodies[s.id].mat.color.setHex(s.active ? s.col : 0x475569);
+      if (avatarGroups[s.id]) avatarGroups[s.id].visible = s.active;
     });
     if (controls) controls.update();
     renderer.render(scene, camera);
