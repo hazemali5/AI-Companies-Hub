@@ -1255,5 +1255,133 @@ window.askAgent = async function(s, userMsg) {
 })();
 </script>
 
+
+<script>
+(function fastNonBlockingGeminiPatch() {
+  const QUICK_MODELS = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-flash-latest"];
+
+  async function fetchWithTimeout(url, options, ms = 4500) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    try {
+      const res = await fetch(url, { ...(options || {}), signal: controller.signal });
+      clearTimeout(timer);
+      return res;
+    } catch (err) {
+      clearTimeout(timer);
+      throw err;
+    }
+  }
+
+  async function quickProbe(key, preferredModel, promptText) {
+    const models = [preferredModel, ...QUICK_MODELS]
+      .map(m => (m || "").trim())
+      .filter((m, idx, arr) => m && arr.indexOf(m) === idx)
+      .slice(0, 3);
+
+    let lastStatus = 503;
+    let lastMsg = "ضغط مؤقت على الخادم (503)";
+
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent?key=${encodeURIComponent(key)}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: promptText }] }] })
+          },
+          4500
+        );
+        const data = await res.json();
+        const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (txt && txt.trim()) {
+          return { ok: true, text: txt.trim(), model: m };
+        }
+        lastStatus = res.status;
+        lastMsg = data?.error?.message || lastMsg;
+        if (res.status === 400 || res.status === 401 || res.status === 403) {
+          return { ok: false, status: lastStatus, message: lastMsg, model: m };
+        }
+      } catch (e) {
+        lastMsg = e.name === "AbortError" ? "انتهت مهلة الاستجابة السريعة" : (e.message || "خطأ شبكة");
+      }
+    }
+
+    return { ok: false, status: lastStatus, message: lastMsg, model: models[models.length - 1] };
+  }
+
+  function bindFastTest() {
+    const btn = document.getElementById("ai-test-btn");
+    const statusBox = document.getElementById("ai-test-status");
+    if (!btn || !statusBox) return;
+
+    btn.onclick = async function () {
+      const keyInp = document.getElementById("ai-key");
+      const modInp = document.getElementById("ai-model");
+      const key = (keyInp ? keyInp.value.trim() : "") || localStorage.getItem("model_gemini_key") || "";
+      const mod = (modInp ? modInp.value.trim() : "") || localStorage.getItem("model_gemini_model") || "gemini-3.8-flash";
+
+      statusBox.style.display = "block";
+      if (!key) {
+        statusBox.innerText = "⚠️ أدخل مفتاح API أولاً.";
+        return;
+      }
+
+      btn.disabled = true;
+      statusBox.innerText = "⏳ فحص سريع (بحد أقصى بضع ثوانٍ)...";
+      try {
+        const out = await quickProbe(key, mod, "قل: جاهز");
+        if (out.ok) {
+          if (modInp) modInp.value = out.model;
+          localStorage.setItem("model_gemini_model", out.model);
+          if (typeof geminiModel !== "undefined") geminiModel = out.model;
+          statusBox.innerText = `✅ متصل عبر (${out.model}): ${out.text}`;
+        } else {
+          statusBox.innerText = `⚡ النتيجة السريعة (${out.status}): ${out.message} — يمكنك متابعة العمل فوراً في الدردشة.`;
+        }
+      } finally {
+        btn.disabled = false;
+      }
+    };
+  }
+
+  const origOpenM = window.openM;
+  if (typeof origOpenM === "function") {
+    window.openM = function (id) {
+      origOpenM(id);
+      if (id === "m-ai") setTimeout(bindFastTest, 80);
+    };
+  }
+  setTimeout(bindFastTest, 200);
+
+  window.askAgent = async function (s, userMsg) {
+    if (!s) return "";
+    if (!s.active) return "الحساب موقوف حالياً لإنهاء الخدمة.";
+
+    const key = (typeof geminiKey !== "undefined" && geminiKey) ? geminiKey : (localStorage.getItem("model_gemini_key") || "");
+    const mod = (typeof geminiModel !== "undefined" && geminiModel) ? geminiModel : (localStorage.getItem("model_gemini_model") || "gemini-3.8-flash");
+
+    if (key) {
+      const fbText = (typeof mem !== "undefined" && mem[s.id] && mem[s.id].fb) ? mem[s.id].fb.join(" | ") : "";
+      const logs = (typeof sharedLog !== "undefined") ? sharedLog.slice(0, 4).join(" | ") : "";
+      const prompt = `أنت ${s.name} (${s.role} - ${s.dept}) في مكتب MODEL للديكور والهندسة.
+شخصيتك: ${s.persona}
+خبراتك: ${s.exp} (${(s.skills || []).join("، ")})
+ملاحظات المدير: ${fbText || "لا يوجد"}
+الذاكرة المشتركة: ${logs}
+أجب بالعربية بإيجاز عملي ومباشر على: ${userMsg}`;
+
+      const res = await quickProbe(key, mod, prompt);
+      if (res.ok) return res.text;
+    }
+
+    const fbList = (typeof mem !== "undefined" && mem[s.id] && mem[s.id].fb) ? mem[s.id].fb : [];
+    const fbNote = fbList.length ? `\n• مع مراعاة ملاحظتك: "${fbList[0]}"` : "";
+    return `بصفتي ${s.name} (${s.role})، بخصوص "${userMsg}":\n• ${s.persona}\n• سأتابع العمل ضمن (${(s.skills || []).join(" و ")}).${fbNote}\n\n_(رد فوري بدون انتظار ضغط الخادم)_`;
+  };
+})();
+</script>
+
 </body>
 </html>
