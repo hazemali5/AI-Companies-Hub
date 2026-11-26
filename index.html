@@ -170,7 +170,7 @@
     <div style="display:flex;justify-content:space-between;align-items:center;"><strong style="color:#d4af37;">⚡ إعدادات Gemini API</strong><button class="btn" onclick="closeM('m-ai')">✕</button></div>
     <p style="font-size:11.5px;color:#94a3b8;line-height:1.55;">أدخل مفتاح Gemini API الذي فعّلته من Google Cloud / AI Studio لربط شخصيات الموظفين الـ 15 بالذكاء الاصطناعي الحقيقي.</p>
     <input class="inp" type="password" id="ai-key" placeholder="AIzaSy...">
-    <input class="inp" type="text" id="ai-model" value="gemini-2.5-flash" placeholder="gemini-2.5-flash">
+    <input class="inp" type="text" id="ai-model" value="gemini-3.8-flash" placeholder="gemini-2.5-flash">
     <button class="btn gold" onclick="saveKey()">حفظ وتفعيل Gemini</button>
   </div>
 </div>
@@ -261,7 +261,7 @@ const STAFF = [
 const mem = {};
 const sharedLog = ["تأسيس مقر MODEL الهندسي والديكور بسور خارجي وفواصل زجاجية ومكاتب عمل متكاملة."];
 let geminiKey = localStorage.getItem("model_gemini_key") || "";
-let geminiModel = localStorage.getItem("model_gemini_model") || "gemini-2.5-flash";
+let geminiModel = localStorage.getItem("model_gemini_model") || "gemini-3.8-flash";
 
 STAFF.forEach(s => {
   mem[s.id] = { chats: [{ who:"a", text:`أهلاً أستاذ حازم. أنا ${s.name} (${s.role}).\n${s.persona}` }], fb: [] };
@@ -281,7 +281,7 @@ function openM(id) {
 function closeM(id) { document.getElementById(id).style.display = "none"; }
 function saveKey() {
   geminiKey = document.getElementById("ai-key").value.trim();
-  geminiModel = document.getElementById("ai-model").value.trim() || "gemini-2.5-flash";
+  geminiModel = document.getElementById("ai-model").value.trim() || "gemini-3.8-flash";
   localStorage.setItem("model_gemini_key", geminiKey);
   localStorage.setItem("model_gemini_model", geminiModel);
   closeM("m-ai");
@@ -760,5 +760,22 @@ window.addEventListener("load", () => {
   }
 });
 </script>
+
+<script>
+(function migrateGeminiModel() {
+  try {
+    var saved = localStorage.getItem("model_gemini_model");
+    if (!saved || saved === "gemini-2.5-flash" || saved === "models/gemini-2.5-flash") {
+      localStorage.setItem("model_gemini_model", "gemini-3.8-flash");
+      if (typeof geminiModel !== "undefined") geminiModel = "gemini-3.8-flash";
+    }
+    var inp = document.getElementById("ai-model");
+    if (inp && (!inp.value || inp.value.indexOf("2.5") !== -1)) {
+      inp.value = "gemini-3.8-flash";
+    }
+  } catch (e) {}
+})();
+</script>
+
 </body>
 </html>
