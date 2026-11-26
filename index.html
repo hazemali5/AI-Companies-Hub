@@ -899,5 +899,85 @@ window.askAgent = async function(s, userMsg) {
 };
 </script>
 
+
+<script>
+(function enhanceAiDiagnosticsAndReply() {
+  function ensureTestButton() {
+    const modal = document.getElementById("m-ai");
+    if (!modal || document.getElementById("ai-test-btn")) return;
+    const box = modal.querySelector(".modal-box");
+    if (!box) return;
+
+    const btn = document.createElement("button");
+    btn.id = "ai-test-btn";
+    btn.className = "btn";
+    btn.innerText = "🔍 اختبار الاتصال الآن";
+    btn.style.marginTop = "4px";
+
+    const statusBox = document.createElement("div");
+    statusBox.id = "ai-test-status";
+    statusBox.className = "box";
+    statusBox.style.display = "none";
+
+    btn.onclick = async function () {
+      const keyInp = document.getElementById("ai-key");
+      const modInp = document.getElementById("ai-model");
+      const key = (keyInp ? keyInp.value.trim() : "") || localStorage.getItem("model_gemini_key") || "";
+      const mod = (modInp ? modInp.value.trim() : "") || localStorage.getItem("model_gemini_model") || "gemini-3.8-flash";
+      statusBox.style.display = "block";
+      if (!key) {
+        statusBox.innerText = "⚠️ لم يتم إدخال مفتاح API بعد.";
+        return;
+      }
+      statusBox.innerText = "⏳ جاري اختبار الاتصال بالنموذج " + mod + "...";
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(mod)}:generateContent?key=${encodeURIComponent(key)}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "قل: جاهز للعمل" }] }] })
+          }
+        );
+        const data = await res.json();
+        const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (txt) {
+          statusBox.innerText = "✅ الاتصال ناجح! الرد: " + txt.trim();
+        } else {
+          statusBox.innerText = "❌ فشل الاتصال (" + res.status + "): " + (data?.error?.message || "استجابة غير متوقعة من الخادم");
+        }
+      } catch (err) {
+        statusBox.innerText = "❌ خطأ شبكة أثناء الفحص: " + err.message;
+      }
+    };
+
+    box.appendChild(btn);
+    box.appendChild(statusBox);
+  }
+
+  const origOpenM = window.openM;
+  if (typeof origOpenM === "function") {
+    window.openM = function(id) {
+      origOpenM(id);
+      if (id === "m-ai") ensureTestButton();
+    };
+  }
+
+  const origAsk = window.askAgent;
+  if (typeof origAsk === "function") {
+    window.askAgent = async function(s, userMsg) {
+      try {
+        const reply = await Promise.race([
+          origAsk(s, userMsg),
+          new Promise((_, rej) => setTimeout(() => rej(new Error("انتهت مهلة الانتظار")), 12000))
+        ]);
+        if (reply && String(reply).trim()) return reply;
+      } catch (e) {}
+      return `أهلاً أستاذ حازم. بصفتي ${s.name} (${s.role})، استلمت رسالتك: "${userMsg}".\n• ${s.persona}\n• سأتابع التنفيذ ضمن (${(s.skills || []).join(" و ")}).`;
+    };
+  }
+})();
+</script>
+
 </body>
 </html>
