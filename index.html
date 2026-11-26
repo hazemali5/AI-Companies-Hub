@@ -777,5 +777,127 @@ window.addEventListener("load", () => {
 })();
 </script>
 
+
+<script>
+// ============================================================================
+// وحدة الذكاء الاصطناعي المدمجة في الكود (MODEL Studio AI Core)
+// ============================================================================
+const AI_CORE = {
+  defaultModel: "gemini-3.8-flash",
+  fallbackModels: ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.0-flash"],
+  retryDelays: [1200, 2600, 4500],
+
+  getApiKey() {
+    const saved = localStorage.getItem("model_gemini_key") || "";
+    if (typeof geminiKey !== "undefined" && geminiKey) return geminiKey.trim();
+    return saved.trim();
+  },
+
+  getModel() {
+    const saved = localStorage.getItem("model_gemini_model") || "";
+    if (typeof geminiModel !== "undefined" && geminiModel) return geminiModel.trim();
+    return (saved || this.defaultModel).trim();
+  },
+
+  buildPrompt(staffMember, userMsg) {
+    const fbList = (typeof mem !== "undefined" && mem[staffMember.id] && mem[staffMember.id].fb)
+      ? mem[staffMember.id].fb.join(" | ")
+      : "";
+    const peers = (typeof STAFF !== "undefined")
+      ? STAFF.filter(p => p.id !== staffMember.id && p.active)
+          .slice(0, 4)
+          .map(p => `${p.name} (${p.role}): ${p.persona}`)
+          .join(" ; ")
+      : "";
+    const memoryLog = (typeof sharedLog !== "undefined")
+      ? sharedLog.slice(0, 6).join(" | ")
+      : "";
+
+    return [
+      `أنت ${staffMember.name} وتعمل بصفة ${staffMember.role} في قسم ${staffMember.dept} داخل مكتب MODEL للديكور والهندسة.`,
+      `شخصيتك المهنية: ${staffMember.persona}`,
+      `خبراتك ومهاراتك: ${staffMember.exp} (${(staffMember.skills || []).join("، ")})`,
+      `ملاحظات وتغذية راجعة من المدير حازم: ${fbList || "لا توجد ملاحظات مسجلة"}`,
+      `تفاعل مع آراء زملائك: ${peers || "لا يوجد"}`,
+      `الذاكرة المشتركة للمكتب: ${memoryLog || "بداية تشغيل المقر"}`,
+      `أجب باللغة العربية بأسلوب عملي ومباشر يعكس شخصيتك ودورك على الرسالة التالية: ${userMsg}`
+    ].join("\n");
+  },
+
+  localFallback(staffMember, userMsg, note = "") {
+    const fbNote = (typeof mem !== "undefined" && mem[staffMember.id] && mem[staffMember.id].fb && mem[staffMember.id].fb[0])
+      ? `\n• مع الأخذ بملاحظتك الأخيرة: "${mem[staffMember.id].fb[0]}"`
+      : "";
+    const suffix = note ? `\n\n_(ملاحظة: ${note})_` : "";
+    return `بصفتي ${staffMember.name} (${staffMember.role})، رأيي حول "${userMsg}":\n• ${staffMember.persona}\n• سأتعامل مع الطلب عبر تخصصي في (${(staffMember.skills || []).join(" و ")}).${fbNote}${suffix}`;
+  },
+
+  async callGeminiEndpoint(modelName, apiKey, prompt) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }]
+      })
+    });
+    const data = await res.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (text) return { ok: true, text: text.trim() };
+
+    const errMsg = data?.error?.message || "";
+    const busy = /high demand|overloaded|unavailable|quota|429|503/i.test(errMsg) || res.status === 429 || res.status === 503;
+    return { ok: false, busy, errMsg };
+  },
+
+  async generateReply(staffMember, userMsg) {
+    if (!staffMember) return "";
+    if (!staffMember.active) return "الحساب موقوف حالياً لإنهاء الخدمة.";
+
+    const apiKey = this.getApiKey();
+    if (!apiKey) {
+      return this.localFallback(staffMember, userMsg, "لم يتم إدخال مفتاح Gemini بعد، تم الرد بالمنطق المحلي");
+    }
+
+    const prompt = this.buildPrompt(staffMember, userMsg);
+    const primaryModel = this.getModel();
+    const candidates = [primaryModel, ...this.fallbackModels.filter(m => m !== primaryModel)];
+
+    for (const modelName of candidates) {
+      for (let i = 0; i <= this.retryDelays.length; i++) {
+        try {
+          const result = await this.callGeminiEndpoint(modelName, apiKey, prompt);
+          if (result.ok) return result.text;
+
+          if (result.busy && i < this.retryDelays.length) {
+            await new Promise(r => setTimeout(r, this.retryDelays[i]));
+            continue;
+          }
+
+          if (result.busy) {
+            break; // جرّب النموذج التالي في القائمة
+          }
+
+          if (result.errMsg && !/not found|not supported|no longer available/i.test(result.errMsg)) {
+            return this.localFallback(staffMember, userMsg, `تنبيه من Gemini: ${result.errMsg}`);
+          }
+          break;
+        } catch (err) {
+          if (i < this.retryDelays.length) {
+            await new Promise(r => setTimeout(r, this.retryDelays[i]));
+          }
+        }
+      }
+    }
+
+    return this.localFallback(staffMember, userMsg, "النماذج تواجه ضغطاً مرتفعاً مؤقتاً، تم عرض رد فوري حسب الشخصية والذاكرة المشتركة");
+  }
+};
+
+window.askAgent = async function(s, userMsg) {
+  return await AI_CORE.generateReply(s, userMsg);
+};
+</script>
+
 </body>
 </html>
