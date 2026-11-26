@@ -2036,5 +2036,176 @@ window.askAgent = async function(s, userMsg) {
 })();
 </script>
 
+
+<script>
+(function fixVisibleUserBubbleAndNaturalReplies() {
+  const GREETING_RE = /^(صباح\s*الخير|مساء\s*الخير|السلام\s*عليكم|مرحبا|مرحباً|أهلا|أهلاً|هلا|كيف\s*الحال|شو\s*الأخبار|تمام)[!.؟\s]*$/i;
+
+  function isGreeting(txt) {
+    return GREETING_RE.test(String(txt || "").trim());
+  }
+
+  function cleanUserInput(val) {
+    return String(val || "").replace(/\s+/g, " ").trim();
+  }
+
+  function buildNaturalFallback(s, cleanMsg) {
+    const name = (s && s.name) ? s.name : "العضو";
+    const role = (s && s.role) ? s.role : "";
+    const chats = (typeof mem !== "undefined" && s && mem[s.id] && Array.isArray(mem[s.id].chats))
+      ? mem[s.id].chats
+      : [];
+    const lastUser = [...chats].reverse().find(m => m && m.who === "u" && cleanUserInput(m.text) !== cleanMsg);
+
+    if (isGreeting(cleanMsg)) {
+      if (lastUser && !isGreeting(lastUser.text)) {
+        return `أهلاً بك أستاذ حازم. ${name} (${role}) معك — نستكمل متابعة ملف "${cleanUserInput(lastUser.text).slice(0, 60)}"، كيف تحب نبدأ اليوم؟`;
+      }
+      return `أهلاً بك أستاذ حازم. ${name} (${role}) جاهز للمتابعة — ما الملف أو القرار الذي نبدأ به اليوم؟`;
+    }
+
+    const prevCtx = (lastUser && !isGreeting(lastUser.text))
+      ? `استكمالاً لحديثنا السابق حول "${cleanUserInput(lastUser.text).slice(0, 55)}"، `
+      : "";
+
+    return `${prevCtx}بخصوص "${cleanMsg}": سأراجع التفاصيل بدقة وأحدد الخطوات العملية والتنفيذية المطلوبة ضمن تخصصي (${(s && Array.isArray(s.skills) && s.skills.length) ? s.skills.join("، ") : "المتابعة"}).`;
+  }
+
+  // إجبار عرض رسائل المستخدم بوضوح داخل حاوية المحادثة
+  function syncChatDomWithMemory() {
+    if (typeof curId === "undefined" || !curId || typeof mem === "undefined" || !mem[curId]) return;
+    const chats = Array.isArray(mem[curId].chats) ? mem[curId].chats : [];
+    const s = (typeof STAFF !== "undefined") ? STAFF.find(x => x.id === curId) : null;
+    const sName = s ? s.name : "الموظف";
+
+    const container =
+      document.getElementById("chat-msgs") ||
+      document.querySelector("#sv-chat .msgs") ||
+      document.querySelector("#sv-chat [class*='msg']") ||
+      document.querySelector("#sv-chat");
+
+    if (!container) return;
+
+    const existingList = container.querySelector(".studio-clean-chat-list");
+    const listEl = existingList || document.createElement("div");
+    listEl.className = "studio-clean-chat-list";
+    listEl.style.cssText = "display:flex;flex-direction:column;gap:8px;padding:6px 0;";
+
+    // إخفاء أي فقاعات قديمة مكررة داخل sv-chat إذا كنا نعرض القائمة المنظمة
+    Array.from(container.children).forEach(child => {
+      if (child !== listEl && child.id !== "clear-emp-mem-btn") {
+        child.style.display = "none";
+      }
+    });
+
+    listEl.innerHTML = chats
+      .filter(m => m && typeof m.text === "string" && m.text.trim())
+      .map(m => {
+        const isUser = m.who === "u";
+        const senderLabel = isUser ? "أنت (حازم)" : sName;
+        const bg = isUser ? "rgba(56,189,248,0.16)" : "rgba(255,255,255,0.05)";
+        const border = isUser ? "rgba(56,189,248,0.45)" : "rgba(255,255,255,0.12)";
+        const align = isUser ? "flex-start" : "flex-end";
+        const safeText = m.text
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\n/g, "<br>");
+        return `<div style="align-self:${align};max-width:92%;background:${bg};border:1px solid ${border};border-radius:10px;padding:8px 10px;font-size:12.5px;line-height:1.55;">
+          <div style="font-size:11px;opacity:0.8;margin-bottom:3px;font-weight:700;">${senderLabel}</div>
+          <div>${safeText}</div>
+        </div>`;
+      })
+      .join("");
+
+    if (!existingList) {
+      container.appendChild(listEl);
+    }
+    listEl.scrollTop = listEl.scrollHeight;
+  }
+
+  const origRenderMsgs = window.renderMsgs;
+  if (typeof origRenderMsgs === "function") {
+    window.renderMsgs = function() {
+      origRenderMsgs.apply(this, arguments);
+      syncChatDomWithMemory();
+    };
+  }
+
+  const prevAsk = window.askAgent;
+  window.askAgent = async function(s, msg) {
+    if (!s) return "";
+    if (!s.active) return "الحساب موقوف حالياً لإنهاء الخدمة.";
+
+    const rawStr = String(msg || "");
+    const marker = "الرسالة الحالية من المدير حازم:";
+    let cleanMsg = rawStr.trim();
+    if (rawStr.includes(marker)) {
+      cleanMsg = rawStr.slice(rawStr.lastIndexOf(marker) + marker.length).trim();
+    } else if (rawStr.includes("الطلب الحالي من المدير حازم:")) {
+      cleanMsg = rawStr.slice(rawStr.lastIndexOf("الطلب الحالي من المدير حازم:") + "الطلب الحالي من المدير حازم:".length).trim();
+    } else if (rawStr.includes("أنت م.") && rawStr.includes("شخصيتك:")) {
+      const lines = rawStr.split("\n").map(l => l.trim()).filter(Boolean);
+      cleanMsg = lines[lines.length - 1] || cleanMsg;
+    }
+    cleanMsg = cleanMsg.replace(/^["«]|["»]$/g, "").trim();
+
+    const chats = (typeof mem !== "undefined" && mem[s.id] && Array.isArray(mem[s.id].chats))
+      ? mem[s.id].chats.slice(-8)
+      : [];
+    const historyBrief = chats
+      .map(c => `${c.who === "u" ? "حازم" : s.name}: ${c.text}`)
+      .join(" | ");
+
+    const prompt = [
+      `أنت ${s.name}، ${s.role} في قسم ${s.dept} بمكتب MODEL للديكور والهندسة.`,
+      `شخصيتك: ${s.persona}`,
+      `مهاراتك: ${(s.skills || []).join("، ")}`,
+      historyBrief ? `سجل المحادثة السابقة: ${historyBrief}` : "",
+      `رسالة المدير حازم الآن: "${cleanMsg}"`,
+      isGreeting(cleanMsg)
+        ? "رد بتحية مهنية طبيعية ومختصرة تليق بدورك واسم المدير حازم دون تكرار قوالب أو خطط مشاريع لم تُطلب بعد."
+        : "أجب بشكل مباشر وعملي ومحدد بالخطوات العملية على الرسالة دون مقدمات طويلة أو تكرار تعليمات النظام."
+    ].filter(Boolean).join("\n");
+
+    let out = "";
+    if (typeof prevAsk === "function") {
+      try {
+        out = await prevAsk(s, prompt);
+      } catch (e) {}
+    }
+
+    out = String(out || "").trim();
+    if (!out || out.includes("1. المراجعة الفنية والاعتماد:") && isGreeting(cleanMsg)) {
+      return buildNaturalFallback(s, cleanMsg);
+    }
+    return out;
+  };
+
+  const origSend = window.sendChat;
+  if (typeof origSend === "function") {
+    window.sendChat = async function() {
+      const inp = document.getElementById("chat-inp");
+      const text = inp ? cleanUserInput(inp.value) : "";
+      if (!text) return;
+
+      if (typeof curId !== "undefined" && curId && typeof mem !== "undefined" && mem[curId]) {
+        mem[curId].chats = Array.isArray(mem[curId].chats) ? mem[curId].chats : [];
+        const last = mem[curId].chats[mem[curId].chats.length - 1];
+        if (!last || last.who !== "u" || cleanUserInput(last.text) !== text) {
+          mem[curId].chats.push({ who: "u", text });
+        }
+        syncChatDomWithMemory();
+      }
+
+      await origSend.apply(this, arguments);
+      syncChatDomWithMemory();
+    };
+  }
+
+  setInterval(syncChatDomWithMemory, 600);
+})();
+</script>
+
 </body>
 </html>
