@@ -1543,5 +1543,181 @@ window.askAgent = async function(s, userMsg) {
 })();
 </script>
 
+
+<script>
+(function fixBloatedMemoryAndFallback() {
+  const MEM_KEY = "model_studio_mem_clean_v2";
+  const LOG_KEY = "model_studio_log_clean_v2";
+
+  function extractRealMessage(raw) {
+    const str = String(raw || "");
+    const marker = "الرسالة الجديدة الآن:";
+    const idx = str.lastIndexOf(marker);
+    if (idx !== -1) {
+      return str.slice(idx + marker.length).trim();
+    }
+    return str.trim();
+  }
+
+  function isPollutedText(txt) {
+    const t = String(txt || "");
+    return (
+      t.includes("سجل محادثتك السابقة مع المدير حازم") ||
+      t.includes("الرسالة الجديدة الآن:") ||
+      t.includes("أحدث قرارات وتوجيهات المكتب:") ||
+      t.length > 900
+    );
+  }
+
+  function sanitizeMemoryStructures() {
+    try {
+      if (typeof mem !== "undefined" && mem) {
+        Object.keys(mem).forEach(id => {
+          const entry = mem[id];
+          if (entry && Array.isArray(entry.chats)) {
+            entry.chats = entry.chats
+              .map(item => {
+                if (!item || typeof item.text !== "string") return null;
+                let cleanText = item.text;
+                if (item.who === "u") {
+                  cleanText = extractRealMessage(cleanText);
+                }
+                if (isPollutedText(cleanText)) {
+                  const extracted = extractRealMessage(cleanText);
+                  cleanText = extracted && !isPollutedText(extracted)
+                    ? extracted
+                    : (item.who === "a" ? "تم استلام ملاحظتك ومتابعة التنفيذ." : "");
+                }
+                if (!cleanText.trim()) return null;
+                return { who: item.who, text: cleanText.trim() };
+              })
+              .filter(Boolean)
+              .slice(-20);
+          }
+        });
+      }
+      if (typeof sharedLog !== "undefined" && Array.isArray(sharedLog)) {
+        const cleaned = sharedLog
+          .map(line => String(line || "").trim())
+          .filter(line => line && !isPollutedText(line));
+        sharedLog.splice(0, sharedLog.length, ...cleaned.slice(0, 30));
+      }
+    } catch (e) {}
+  }
+
+  function loadCleanStorage() {
+    try {
+      const savedMem = JSON.parse(localStorage.getItem(MEM_KEY) || "null");
+      const savedLog = JSON.parse(localStorage.getItem(LOG_KEY) || "null");
+      if (savedMem && typeof mem !== "undefined") {
+        Object.keys(savedMem).forEach(id => {
+          if (mem[id]) {
+            if (Array.isArray(savedMem[id].chats)) mem[id].chats = savedMem[id].chats;
+            if (Array.isArray(savedMem[id].fb)) mem[id].fb = savedMem[id].fb;
+          }
+        });
+      }
+      if (Array.isArray(savedLog) && typeof sharedLog !== "undefined") {
+        sharedLog.splice(0, sharedLog.length, ...savedLog);
+      }
+      sanitizeMemoryStructures();
+    } catch (e) {}
+  }
+
+  function saveCleanStorage() {
+    sanitizeMemoryStructures();
+    try {
+      if (typeof mem !== "undefined") {
+        localStorage.setItem(MEM_KEY, JSON.stringify(mem));
+      }
+      if (typeof sharedLog !== "undefined") {
+        localStorage.setItem(LOG_KEY, JSON.stringify(sharedLog.slice(0, 30)));
+      }
+    } catch (e) {}
+  }
+
+  function buildCleanFallback(s, cleanMsg) {
+    const chats = (typeof mem !== "undefined" && mem[s.id] && Array.isArray(mem[s.id].chats))
+      ? mem[s.id].chats.filter(c => c && !isPollutedText(c.text))
+      : [];
+    const prevUserMsgs = chats
+      .filter(c => c.who === "u" && c.text.trim() !== cleanMsg.trim())
+      .map(c => c.text.trim());
+    const lastTopic = prevUserMsgs.length ? prevUserMsgs[prevUserMsgs.length - 1] : "";
+
+    const topicLine = lastTopic
+      ? `استكمالاً لنقاشنا السابق حول "${lastTopic.slice(0, 60)}"، `
+      : "";
+
+    return `${topicLine}بخصوص "${cleanMsg}":\n• ${s.persona}\n• سأتعامل مع هذا الطرح عبر (${(s.skills || ["الخبرة العملية"]).join(" و ")}).`;
+  }
+
+  const prevAskAgent = window.askAgent;
+  window.askAgent = async function(s, incomingMsg) {
+    loadCleanStorage();
+    if (!s) return "";
+    if (!s.active) return "الحساب موقوف حالياً لإنهاء الخدمة.";
+
+    const cleanMsg = extractRealMessage(incomingMsg);
+    const chats = (typeof mem !== "undefined" && mem[s.id] && Array.isArray(mem[s.id].chats))
+      ? mem[s.id].chats.filter(c => c && !isPollutedText(c.text)).slice(-8)
+      : [];
+    const historySummary = chats
+      .map(c => `${c.who === "u" ? "حازم" : s.name}: ${c.text}`)
+      .join(" | ");
+    const recentDecisions = (typeof sharedLog !== "undefined")
+      ? sharedLog.filter(x => !isPollutedText(x)).slice(0, 4).join(" | ")
+      : "";
+
+    const composedPrompt = [
+      `أنت ${s.name} وتعمل كـ ${s.role} في قسم ${s.dept} بمكتب MODEL للديكور والهندسة.`,
+      `شخصيتك: ${s.persona}`,
+      `مهاراتك: ${(s.skills || []).join("، ")}`,
+      historySummary ? `ملخص الحوار السابق معك: ${historySummary}` : "",
+      recentDecisions ? `أحدث قرارات المكتب: ${recentDecisions}` : "",
+      `أجب مباشرة وبالعربية على رسالة المدير حازم الجديدة (بدون تكرار المقدمة أو لصق السجل): "${cleanMsg}"`
+    ].filter(Boolean).join("\n");
+
+    let aiReply = "";
+    if (typeof prevAskAgent === "function") {
+      try {
+        aiReply = await prevAskAgent(s, composedPrompt);
+      } catch (e) {}
+    }
+
+    if (aiReply && String(aiReply).trim() && !isPollutedText(aiReply)) {
+      const cleanedReply = String(aiReply).replace(/_\(رد فوري بدون انتظار ضغط الخادم\)_/g, "").trim();
+      saveCleanStorage();
+      return cleanedReply;
+    }
+
+    const fallback = buildCleanFallback(s, cleanMsg);
+    saveCleanStorage();
+    return fallback;
+  };
+
+  const origSend = window.sendChat;
+  if (typeof origSend === "function") {
+    window.sendChat = async function() {
+      const inp = document.getElementById("chat-inp");
+      if (inp && isPollutedText(inp.value)) {
+        inp.value = extractRealMessage(inp.value);
+      }
+      await origSend.apply(this, arguments);
+      sanitizeMemoryStructures();
+      if (typeof renderMsgs === "function") renderMsgs();
+      saveCleanStorage();
+    };
+  }
+
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      loadCleanStorage();
+      if (typeof renderMsgs === "function") renderMsgs();
+    }, 180);
+  });
+})();
+</script>
+
 </body>
 </html>
