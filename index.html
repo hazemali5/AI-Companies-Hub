@@ -1383,5 +1383,165 @@ window.askAgent = async function(s, userMsg) {
 })();
 </script>
 
+
+<script>
+(function persistentCharacterMemoryPatch() {
+  const MEM_KEY = "model_studio_mem_v1";
+  const LOG_KEY = "model_studio_shared_log_v1";
+
+  function loadPersistedMemory() {
+    try {
+      const savedMem = JSON.parse(localStorage.getItem(MEM_KEY) || "null");
+      const savedLog = JSON.parse(localStorage.getItem(LOG_KEY) || "null");
+
+      if (savedMem && typeof mem !== "undefined") {
+        Object.keys(savedMem).forEach(id => {
+          if (mem[id] && Array.isArray(savedMem[id].chats) && savedMem[id].chats.length) {
+            mem[id].chats = savedMem[id].chats;
+          }
+          if (mem[id] && Array.isArray(savedMem[id].fb)) {
+            mem[id].fb = savedMem[id].fb;
+          }
+        });
+      }
+      if (Array.isArray(savedLog) && savedLog.length && typeof sharedLog !== "undefined") {
+        sharedLog.splice(0, sharedLog.length, ...savedLog);
+      }
+    } catch (e) {}
+  }
+
+  function savePersistedMemory() {
+    try {
+      if (typeof mem !== "undefined") {
+        localStorage.setItem(MEM_KEY, JSON.stringify(mem));
+      }
+      if (typeof sharedLog !== "undefined") {
+        localStorage.setItem(LOG_KEY, JSON.stringify(sharedLog.slice(0, 60)));
+      }
+    } catch (e) {}
+  }
+
+  // حقن تاريخ المحادثة الخاصة بالموظف في كل استدعاء لـ askAgent
+  const prevAsk = window.askAgent;
+  window.askAgent = async function(s, userMsg) {
+    loadPersistedMemory();
+    if (!s) return "";
+    if (!s.active) return "الحساب موقوف حالياً لإنهاء الخدمة.";
+
+    const historyArr = (typeof mem !== "undefined" && mem[s.id] && Array.isArray(mem[s.id].chats))
+      ? mem[s.id].chats.slice(-10)
+      : [];
+    const formattedHistory = historyArr
+      .map(m => `${m.who === "u" ? "المدير حازم" : s.name}: ${m.text}`)
+      .join("\n");
+
+    const fbText = (typeof mem !== "undefined" && mem[s.id] && Array.isArray(mem[s.id].fb))
+      ? mem[s.id].fb.join(" | ")
+      : "";
+    const logs = (typeof sharedLog !== "undefined")
+      ? sharedLog.slice(0, 8).join(" | ")
+      : "";
+
+    const enrichedUserMsg = [
+      `سجل محادثتك السابقة مع المدير حازم (تذكّر ما تم الاتفاق عليه وتجنب تكرار نفس المقدمة التقليدية):`,
+      formattedHistory || "لا توجد رسائل سابقة بعد",
+      `أحدث قرارات وتوجيهات المكتب: ${logs || "لا يوجد"}`,
+      `ملاحظات خاصة بك: ${fbText || "لا يوجد"}`,
+      `الرسالة الجديدة الآن: ${userMsg}`
+    ].join("\n---\n");
+
+    let reply = "";
+    if (typeof prevAsk === "function") {
+      reply = await prevAsk(s, enrichedUserMsg);
+    }
+
+    if (!reply || !String(reply).trim()) {
+      const lastUserTurn = [...historyArr].reverse().find(m => m.who === "u" && m.text !== userMsg);
+      const prevHint = lastUserTurn ? `\n• استكمالاً لنقاشنا السابق حول ("${lastUserTurn.text.slice(0, 45)}")` : "";
+      reply = `بصفتي ${s.name} (${s.role})، بخصوص "${userMsg}":${prevHint}\n• ${s.persona}\n• سأتابع العمل ضمن (${(s.skills || ["التخصص المهني"]).join(" و ")}).`;
+    }
+
+    savePersistedMemory();
+    return reply;
+  };
+
+  // حفظ تلقائي بعد كل إرسال، تغذية راجعة، مهارة، أو إجراء HR
+  const origSendChat = window.sendChat;
+  if (typeof origSendChat === "function") {
+    window.sendChat = async function() {
+      await origSendChat.apply(this, arguments);
+      savePersistedMemory();
+    };
+  }
+
+  const origAddFb = window.addFeedback;
+  if (typeof origAddFb === "function") {
+    window.addFeedback = function() {
+      origAddFb.apply(this, arguments);
+      savePersistedMemory();
+    };
+  }
+
+  const origAddSkill = window.addSkill;
+  if (typeof origAddSkill === "function") {
+    window.addSkill = function() {
+      origAddSkill.apply(this, arguments);
+      savePersistedMemory();
+    };
+  }
+
+  const origDoHr = window.doHr;
+  if (typeof origDoHr === "function") {
+    window.doHr = function() {
+      origDoHr.apply(this, arguments);
+      savePersistedMemory();
+    };
+  }
+
+  // إضافة زر مسح ذاكرة الموظف الحالي فقط داخل نافذة الدردشة
+  function injectClearMemoryBtn() {
+    const chatTab = document.getElementById("sv-chat");
+    if (!chatTab || document.getElementById("clear-emp-mem-btn")) return;
+    const btn = document.createElement("button");
+    btn.id = "clear-emp-mem-btn";
+    btn.className = "btn";
+    btn.style.cssText = "align-self:flex-start;font-size:11px;padding:4px 8px;color:#fda4af;border-color:rgba(244,63,94,0.35);";
+    btn.innerText = "🗑️ مسح ذاكرة هذا الموظف";
+    btn.onclick = function() {
+      if (typeof curId !== "undefined" && curId && typeof mem !== "undefined" && mem[curId]) {
+        const s = (typeof STAFF !== "undefined") ? STAFF.find(x => x.id === curId) : null;
+        mem[curId].chats = [{
+          who: "a",
+          text: s ? `تم تصفير سجل المحادثة مع ${s.name}. كيف نبدأ من جديد أستاذ حازم؟` : "تم تصفير سجل المحادثة."
+        }];
+        savePersistedMemory();
+        if (typeof renderMsgs === "function") renderMsgs();
+      }
+    };
+    chatTab.insertBefore(btn, chatTab.firstChild);
+  }
+
+  const origSelectEmp = window.selectEmp;
+  if (typeof origSelectEmp === "function") {
+    window.selectEmp = function() {
+      origSelectEmp.apply(this, arguments);
+      loadPersistedMemory();
+      if (typeof renderMsgs === "function") renderMsgs();
+      injectClearMemoryBtn();
+    };
+  }
+
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      loadPersistedMemory();
+      injectClearMemoryBtn();
+      if (typeof curId !== "undefined" && curId && typeof renderMsgs === "function") {
+        renderMsgs();
+      }
+    }, 150);
+  });
+})();
+</script>
+
 </body>
 </html>
