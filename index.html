@@ -2207,5 +2207,426 @@ window.askAgent = async function(s, userMsg) {
 })();
 </script>
 
+
+<script>
+(function modelStudioProjectsAndAttachments() {
+  const HUB_KEY = "model_studio_projects_hub_v1";
+
+  function loadHub() {
+    try {
+      const data = JSON.parse(localStorage.getItem(HUB_KEY) || "null");
+      if (data && Array.isArray(data.projects) && data.projects.length) return data;
+    } catch (e) {}
+    const defaultProj = {
+      id: "PRJ-APT-101",
+      name: "مشروع شقة سكنية — تصميم داخلي وتنفيذ",
+      type: "تصميم داخلي وتنفيذ هندسي",
+      notes: "توزيع الفراغات، المخططات التنفيذية، اختيار الخامات والإضاءة، ومتابعة التنفيذ.",
+      createdAt: new Date().toLocaleDateString("ar-EG")
+    };
+    return {
+      activeProjectId: defaultProj.id,
+      projects: [defaultProj],
+      uploads: [],       // [{ id, projectId, agentId, name, mime, size, excerpt, createdAt }]
+      deliverables: []   // [{ id, projectId, agentId, agentName, role, title, content, filename, createdAt }]
+    };
+  }
+
+  function saveHub(hub) {
+    try {
+      // الحفاظ على حدود التخزين الآمنة في localStorage
+      hub.uploads = (hub.uploads || []).slice(0, 20).map(u => ({
+        ...u,
+        excerpt: String(u.excerpt || "").slice(0, 1200)
+      }));
+      hub.deliverables = (hub.deliverables || []).slice(0, 30).map(d => ({
+        ...d,
+        content: String(d.content || "").slice(0, 4000)
+      }));
+      localStorage.setItem(HUB_KEY, JSON.stringify(hub));
+    } catch (e) {}
+  }
+
+  function getActiveProject(hub) {
+    const list = hub.projects || [];
+    return list.find(p => p.id === hub.activeProjectId) || list[0] || null;
+  }
+
+  function getMatchingEngineers(project) {
+    if (typeof STAFF === "undefined" || !Array.isArray(STAFF)) return [];
+    const activeStaff = STAFF.filter(s => s && s.active !== false);
+    const pText = `${project ? project.name : ""} ${project ? project.type : ""} ${project ? project.notes : ""}`.toLowerCase();
+
+    const engMatches = activeStaff.filter(s => {
+      const blob = `${s.role || ""} ${s.dept || ""} ${s.exp || ""} ${(s.skills || []).join(" ")}`.toLowerCase();
+      return /(مهندس|معماري|تصميم|ديكور|إنشائي|تنفيذ|إشراف|مشاريع|فني|إخراج)/.test(blob);
+    });
+
+    if (engMatches.length >= 2) return engMatches.slice(0, 6);
+    if (pText.includes("شقة") || pText.includes("داخلي") || pText.includes("ديكور")) {
+      return activeStaff.slice(0, 5);
+    }
+    return activeStaff.slice(0, 4);
+  }
+
+  function triggerFileDownload(filename, textContent) {
+    const blob = new Blob([String(textContent || "")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename || "deliverable.txt";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function addDeliverable(agent, title, content, projectId) {
+    const hub = loadHub();
+    const proj = (hub.projects || []).find(p => p.id === projectId) || getActiveProject(hub);
+    const cleanTitle = String(title || "مخرج هندسي").trim().slice(0, 90);
+    const safeSlug = cleanTitle.replace(/[^\w\u0600-\u06FF-]+/g, "_").slice(0, 40) || "output";
+    const item = {
+      id: "DEL-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).slice(2, 5).toUpperCase(),
+      projectId: proj ? proj.id : "",
+      agentId: agent ? agent.id : "",
+      agentName: agent ? agent.name : "فريق العمل",
+      role: agent ? agent.role : "",
+      title: cleanTitle,
+      content: String(content || "").trim(),
+      filename: `${safeSlug}.md`,
+      createdAt: new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })
+    };
+    hub.deliverables = [item, ...(hub.deliverables || [])].slice(0, 30);
+    saveHub(hub);
+    renderProjectsAndFilesPanel();
+    return item;
+  }
+
+  function buildTeamAndProjectContext(agent) {
+    const hub = loadHub();
+    const proj = getActiveProject(hub);
+    if (!proj) return "";
+
+    const team = getMatchingEngineers(proj);
+    const teamNames = team.map(m => `${m.name} (${m.role})`).join("، ");
+
+    const projUploads = (hub.uploads || [])
+      .filter(u => !u.projectId || u.projectId === proj.id || (agent && u.agentId === agent.id))
+      .slice(0, 5);
+
+    const projDeliverables = (hub.deliverables || [])
+      .filter(d => (!d.projectId || d.projectId === proj.id) && (!agent || d.agentId !== agent.id))
+      .slice(0, 6);
+
+    const uploadsSummary = projUploads.length
+      ? projUploads.map(u => `- [${u.name}]${u.excerpt ? `: ${u.excerpt.slice(0, 180)}` : ""}`).join("\n")
+      : "لا توجد ملفات مرفوعة حالياً.";
+
+    const colleaguesWorkSummary = projDeliverables.length
+      ? projDeliverables.map(d => `- ${d.agentName} (${d.role}) أنجز [${d.title}]: ${d.content.slice(0, 160)}`).join("\n")
+      : "لم يُسجَّل تسليم من زملاء الفريق بعد.";
+
+    return [
+      `المشروع النشط: ${proj.name} (${proj.type})`,
+      `وصف وأهداف المشروع: ${proj.notes}`,
+      `فريق المهندسين والمختصين المرتبط بالمشروع: ${teamNames || "فريق المكتب"}`,
+      `الملفات المرفوعة من المدير حازم:\n${uploadsSummary}`,
+      `ما أنجزه أعضاء الفريق الآخرون في هذا المشروع:\n${colleaguesWorkSummary}`
+    ].join("\n");
+  }
+
+  // ربط askAgent تلقائياً بسياق المشروع والملفات وأعمال الزملاء + توليد مخرج قابل للتحميل عند الطلب
+  const prevAsk = window.askAgent;
+  window.askAgent = async function(agent, incomingMsg) {
+    if (!agent) return "";
+    const ctxBlock = buildTeamAndProjectContext(agent);
+    const msgStr = String(incomingMsg || "").trim();
+
+    const augmentedMsg = ctxBlock
+      ? `${ctxBlock}\n\n---\nرسالة المدير حازم الآن:\n${msgStr}`
+      : msgStr;
+
+    let reply = "";
+    if (typeof prevAsk === "function") {
+      reply = await prevAsk(agent, augmentedMsg);
+    }
+
+    const cleanReply = String(reply || "").trim();
+    const wantsDeliverable = /(مخطط|مخططات|اخراج|إخراج|جدول|كميات|تقرير|مواصفات|تصميم|ملف|تسليم|نموذج)/i.test(msgStr);
+
+    if (cleanReply && wantsDeliverable) {
+      const hub = loadHub();
+      const proj = getActiveProject(hub);
+      addDeliverable(
+        agent,
+        `${msgStr.slice(0, 45)} — ${agent.name}`,
+        `# ${msgStr}\n**المسؤول:** ${agent.name} (${agent.role})\n**المشروع:** ${proj ? proj.name : "عام"}\n\n${cleanReply}`,
+        proj ? proj.id : ""
+      );
+    }
+
+    return cleanReply;
+  };
+
+  // تشغيل تنسيق جماعي لمهندسي المشروع النشط
+  async function runProjectTeamCoordination() {
+    const hub = loadHub();
+    const proj = getActiveProject(hub);
+    if (!proj) return;
+
+    const statusEl = document.getElementById("prj-team-status");
+    const team = getMatchingEngineers(proj);
+    if (!team.length) {
+      if (statusEl) statusEl.innerText = "⚠️ لا يوجد مهندسون نشطون متاحون حالياً.";
+      return;
+    }
+
+    if (statusEl) {
+      statusEl.innerText = `⏳ جاري تنسيق العمل بين ${team.length} مهندسين ومختصين على "${proj.name}"...`;
+    }
+
+    for (const member of team) {
+      const taskPrompt = `بصفتك ${member.name} (${member.role}) ضمن مشروع "${proj.name}"، حدّد باختصار عملي (في 3 نقاط محددة) دورك ومخرجك الفعلي في هذه المرحلة بناءً على ملفات المشروع وأعمال الزملاء.`;
+      const out = await window.askAgent(member, taskPrompt);
+      if (out && String(out).trim()) {
+        addDeliverable(
+          member,
+          `خطة ومخرج ${member.role} — ${proj.name.slice(0, 30)}`,
+          `# مساهمة ${member.name} (${member.role})\n**المشروع:** ${proj.name}\n\n${out.trim()}`,
+          proj.id
+        );
+        if (typeof mem !== "undefined" && mem[member.id]) {
+          mem[member.id].chats = Array.isArray(mem[member.id].chats) ? mem[member.id].chats : [];
+          mem[member.id].chats.push({
+            who: "a",
+            text: `تم تسجيل مساهمتي في مشروع (${proj.name}) وإضافة المخرج للتحميل:\n${out.trim()}`
+          });
+        }
+      }
+    }
+
+    if (statusEl) {
+      statusEl.innerText = `✅ تم ربط وتحديث مخرجات ${team.length} مهندسين للمشروع. يمكنك تحميلها من قائمة المخرجات بالأسفل.`;
+    }
+    renderProjectsAndFilesPanel();
+  }
+
+  function renderProjectsAndFilesPanel() {
+    const host = document.getElementById("model-prj-files-hub");
+    if (!host) return;
+
+    const hub = loadHub();
+    const proj = getActiveProject(hub);
+    const team = getMatchingEngineers(proj);
+
+    const projOptions = (hub.projects || [])
+      .map(p => `<option value="${p.id}" ${proj && p.id === proj.id ? "selected" : ""}>${p.name}</option>`)
+      .join("");
+
+    const teamBadges = team.length
+      ? team.map(m => `<span style="display:inline-block;background:rgba(56,189,248,0.14);border:1px solid rgba(56,189,248,0.35);border-radius:999px;padding:2px 8px;font-size:11px;margin:2px;">${m.name} • ${m.role}</span>`).join("")
+      : `<span style="font-size:11px;opacity:0.75;">لا يوجد فريق مرتبط بعد</span>`;
+
+    const uploadsHtml = (hub.uploads || []).length
+      ? hub.uploads.slice(0, 8).map(u =>
+          `<div style="padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <div>
+              <b>📎 ${u.name}</b> <span style="opacity:0.7;font-size:11px;">(${u.createdAt || ""})</span>
+              ${u.excerpt ? `<div style="font-size:11px;opacity:0.8;margin-top:2px;">${u.excerpt.slice(0, 90)}...</div>` : ""}
+            </div>
+          </div>`
+        ).join("")
+      : `<div style="opacity:0.7;font-size:11.5px;">لم ترفع ملفات بعد.</div>`;
+
+    const deliverablesHtml = (hub.deliverables || []).length
+      ? hub.deliverables.slice(0, 10).map((d, idx) =>
+          `<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <div style="flex:1;">
+              <b>📄 ${d.title}</b>
+              <div style="font-size:11px;opacity:0.8;">بواسطة: ${d.agentName} (${d.role}) • ${d.createdAt || ""}</div>
+            </div>
+            <button type="button" class="btn" data-dl-idx="${idx}" style="padding:4px 9px;font-size:11px;white-space:nowrap;">⬇️ تحميل</button>
+          </div>`
+        ).join("")
+      : `<div style="opacity:0.7;font-size:11.5px;">لا توجد مخرجات منجزة جاهزة للتحميل بعد.</div>`;
+
+    host.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:10px;text-align:right;">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;">
+          <b style="font-size:13px;">🏗️ المشاريع وفريق المهندسين المختصين</b>
+          <button type="button" id="prj-new-btn" class="btn" style="padding:4px 9px;font-size:11px;">+ مشروع جديد</button>
+        </div>
+
+        <div id="prj-new-form" style="display:none;background:rgba(255,255,255,0.04);padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);">
+          <input id="prj-name-inp" type="text" placeholder="اسم المشروع (مثال: شقة 140م - تصميم داخلي)" style="width:100%;margin-bottom:6px;padding:6px;border-radius:6px;background:rgba(0,0,0,0.25);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:12px;">
+          <input id="prj-notes-inp" type="text" placeholder="نطاق العمل والمتطلبات (معماري، تصميم داخلي، إضاءة، تنفيذ...)" style="width:100%;margin-bottom:6px;padding:6px;border-radius:6px;background:rgba(0,0,0,0.25);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:12px;">
+          <button type="button" id="prj-save-btn" class="btn" style="padding:5px 10px;font-size:11.5px;">حفظ وتفعيل المشروع</button>
+        </div>
+
+        <select id="prj-select" style="width:100%;padding:6px;border-radius:8px;background:rgba(15,23,42,0.85);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:12px;">
+          ${projOptions}
+        </select>
+
+        <div>
+          <div style="font-size:11px;opacity:0.8;margin-bottom:4px;">المهندسون والمختصون المرتبطون بالمشروع تلقائياً:</div>
+          <div>${teamBadges}</div>
+        </div>
+
+        <button type="button" id="prj-run-team-btn" class="btn" style="width:100%;padding:6px 10px;font-size:12px;background:rgba(56,189,248,0.18);border-color:rgba(56,189,248,0.45);">
+          🤝 بدء العمل الجماعي للمهندسين وتوليد مخرجات المشروع
+        </button>
+        <div id="prj-team-status" style="font-size:11.5px;opacity:0.9;"></div>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.12);margin:2px 0;">
+
+        <div>
+          <b style="font-size:12.5px;">📤 رفع ملفات ومرفقات للفريق</b>
+          <div style="margin-top:6px;display:flex;gap:6px;align-items:center;">
+            <input id="hub-file-input" type="file" style="font-size:11px;color:#fff;max-width:100%;">
+          </div>
+          <div style="margin-top:8px;">${uploadsHtml}</div>
+        </div>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.12);margin:2px 0;">
+
+        <div>
+          <b style="font-size:12.5px;">📥 مخرجات منجزة من المهندسين (جاهزة للتحميل)</b>
+          <div style="margin-top:6px;">${deliverablesHtml}</div>
+        </div>
+      </div>
+    `;
+
+    const sel = document.getElementById("prj-select");
+    if (sel) {
+      sel.onchange = function() {
+        const curHub = loadHub();
+        curHub.activeProjectId = sel.value;
+        saveHub(curHub);
+        renderProjectsAndFilesPanel();
+      };
+    }
+
+    const newBtn = document.getElementById("prj-new-btn");
+    const newForm = document.getElementById("prj-new-form");
+    if (newBtn && newForm) {
+      newBtn.onclick = function() {
+        newForm.style.display = newForm.style.display === "none" ? "block" : "none";
+      };
+    }
+
+    const saveBtn = document.getElementById("prj-save-btn");
+    if (saveBtn) {
+      saveBtn.onclick = function() {
+        const nameInp = document.getElementById("prj-name-inp");
+        const notesInp = document.getElementById("prj-notes-inp");
+        const pName = nameInp ? nameInp.value.trim() : "";
+        if (!pName) return;
+        const pNotes = notesInp && notesInp.value.trim()
+          ? notesInp.value.trim()
+          : "مشروع هندسي وتصميم داخلي متكامل يضم كافة التخصصات المعنية.";
+        const curHub = loadHub();
+        const newPrj = {
+          id: "PRJ-" + Date.now().toString(36).toUpperCase(),
+          name: pName,
+          type: "مشروع متكامل التخصصات",
+          notes: pNotes,
+          createdAt: new Date().toLocaleDateString("ar-EG")
+        };
+        curHub.projects = [newPrj, ...(curHub.projects || [])].slice(0, 15);
+        curHub.activeProjectId = newPrj.id;
+        saveHub(curHub);
+        renderProjectsAndFilesPanel();
+      };
+    }
+
+    const runTeamBtn = document.getElementById("prj-run-team-btn");
+    if (runTeamBtn) {
+      runTeamBtn.onclick = runProjectTeamCoordination;
+    }
+
+    const fileInp = document.getElementById("hub-file-input");
+    if (fileInp) {
+      fileInp.onchange = function() {
+        const file = fileInp.files && fileInp.files[0];
+        if (!file) return;
+        const curHub = loadHub();
+        const activeP = getActiveProject(curHub);
+
+        const finishSave = (excerptText) => {
+          curHub.uploads = [
+            {
+              id: "UPL-" + Date.now().toString(36).toUpperCase(),
+              projectId: activeP ? activeP.id : "",
+              agentId: (typeof curId !== "undefined" && curId) ? curId : "",
+              name: file.name,
+              mime: file.type || "file",
+              size: file.size || 0,
+              excerpt: excerptText || `ملف مرفق (${file.name}) بحجم ${Math.round((file.size || 0) / 1024)} KB`,
+              createdAt: new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })
+            },
+            ...(curHub.uploads || [])
+          ].slice(0, 20);
+          saveHub(curHub);
+          renderProjectsAndFilesPanel();
+        };
+
+        if (file.size < 120000 && (/text|json|csv|xml|svg|md/i.test(file.type) || /\.(txt|md|csv|json|dxf|svg|log)$/i.test(file.name))) {
+          const reader = new FileReader();
+          reader.onload = () => finishSave(String(reader.result || "").slice(0, 1000));
+          reader.onerror = () => finishSave("");
+          reader.readAsText(file);
+        } else {
+          finishSave(`مرفق مرفوع: ${file.name} (${Math.round((file.size || 0) / 1024)} KB)`);
+        }
+      };
+    }
+
+    host.querySelectorAll("[data-dl-idx]").forEach(btn => {
+      btn.onclick = function() {
+        const idx = Number(btn.getAttribute("data-dl-idx"));
+        const curHub = loadHub();
+        const item = (curHub.deliverables || [])[idx];
+        if (item) {
+          triggerFileDownload(item.filename || "deliverable.md", item.content || "");
+        }
+      };
+    });
+  }
+
+  function ensureHubDrawer() {
+    if (document.getElementById("model-prj-files-toggle")) return;
+
+    const toggleBtn = document.createElement("button");
+    toggleBtn.id = "model-prj-files-toggle";
+    toggleBtn.className = "btn";
+    toggleBtn.style.cssText = "position:fixed;bottom:14px;left:14px;z-index:9999;background:rgba(15,23,42,0.92);border:1px solid rgba(56,189,248,0.5);color:#e0f2fe;padding:7px 12px;border-radius:10px;font-size:12px;cursor:pointer;";
+    toggleBtn.innerText = "📁 المشاريع والمرفقات";
+
+    const drawer = document.createElement("div");
+    drawer.id = "model-prj-files-drawer";
+    drawer.style.cssText = "display:none;position:fixed;bottom:54px;left:14px;width:360px;max-width:calc(100vw - 28px);max-height:72vh;overflow-y:auto;z-index:9999;background:rgba(15,23,42,0.96);border:1px solid rgba(255,255,255,0.18);border-radius:12px;padding:12px;color:#fff;box-shadow:0 12px 32px rgba(0,0,0,0.45);";
+
+    const panelInner = document.createElement("div");
+    panelInner.id = "model-prj-files-hub";
+    drawer.appendChild(panelInner);
+
+    toggleBtn.onclick = function() {
+      const open = drawer.style.display === "none";
+      drawer.style.display = open ? "block" : "none";
+      if (open) renderProjectsAndFilesPanel();
+    };
+
+    document.body.appendChild(toggleBtn);
+    document.body.appendChild(drawer);
+    renderProjectsAndFilesPanel();
+  }
+
+  window.addEventListener("load", () => {
+    setTimeout(ensureHubDrawer, 250);
+  });
+})();
+</script>
+
 </body>
 </html>
