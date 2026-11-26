@@ -979,5 +979,140 @@ window.askAgent = async function(s, userMsg) {
 })();
 </script>
 
+
+<script>
+(function addListModelsAndResilientChat() {
+  function buildPersonaFallback(s, userMsg, reasonNote) {
+    const fbList = (typeof mem !== "undefined" && mem[s.id] && mem[s.id].fb) ? mem[s.id].fb : [];
+    const fbLine = fbList.length ? `\n• مع مراعاة ملاحظتك السابقة: "${fbList[0]}"` : "";
+    const recentLog = (typeof sharedLog !== "undefined" && sharedLog.length) ? `\n• بناءً على سجل المكتب: ${sharedLog[0]}` : "";
+    const noteLine = reasonNote ? `\n\n_(وضع العمل الفوري: ${reasonNote})_` : "";
+    return `بصفتي ${s.name} (${s.role} — ${s.dept})، بخصوص "${userMsg}":\n• ${s.persona}\n• سأتعامل مع هذا الملف عبر (${(s.skills || ["التخصص المهني"]).join(" و ")}).${fbLine}${recentLog}${noteLine}`;
+  }
+
+  function enhanceModal() {
+    const modal = document.getElementById("m-ai");
+    if (!modal) return;
+    const box = modal.querySelector(".modal-box");
+    if (!box) return;
+
+    const statusBox = document.getElementById("ai-test-status") || (() => {
+      const d = document.createElement("div");
+      d.id = "ai-test-status";
+      d.className = "box";
+      d.style.display = "none";
+      box.appendChild(d);
+      return d;
+    })();
+
+    if (!document.getElementById("ai-list-models-btn")) {
+      const listBtn = document.createElement("button");
+      listBtn.id = "ai-list-models-btn";
+      listBtn.className = "btn";
+      listBtn.innerText = "📋 جلب النماذج المتاحة لمفتاحك";
+
+      const pickerWrap = document.createElement("div");
+      pickerWrap.id = "ai-models-picker";
+      pickerWrap.style.cssText = "display:none;flex-direction:column;gap:6px;";
+
+      listBtn.onclick = async function () {
+        const keyInp = document.getElementById("ai-key");
+        const modInp = document.getElementById("ai-model");
+        const key = (keyInp ? keyInp.value.trim() : "") || localStorage.getItem("model_gemini_key") || "";
+        statusBox.style.display = "block";
+        if (!key) {
+          statusBox.innerText = "⚠️ أدخل مفتاح API أولاً ثم اضغط جلب النماذج.";
+          return;
+        }
+        statusBox.innerText = "⏳ جاري جلب قائمة النماذج المفعّلة لهذا المفتاح...";
+        try {
+          const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`);
+          const data = await r.json();
+          if (!r.ok || !Array.isArray(data.models)) {
+            statusBox.innerText = "❌ تعذر جلب النماذج (" + r.status + "): " + (data?.error?.message || "تحقق من المفتاح");
+            return;
+          }
+          const supported = data.models
+            .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes("generateContent"))
+            .map(m => m.name.replace(/^models\//, ""));
+
+          if (!supported.length) {
+            statusBox.innerText = "⚠️ لم يتم العثور على نماذج تدعم generateContent لهذا المفتاح.";
+            return;
+          }
+
+          pickerWrap.innerHTML = "";
+          pickerWrap.style.display = "flex";
+          const sel = document.createElement("select");
+          sel.className = "sel";
+          supported.forEach(name => {
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = name;
+            if (modInp && modInp.value.trim() === name) opt.selected = true;
+            sel.appendChild(opt);
+          });
+          sel.onchange = function () {
+            if (modInp) modInp.value = sel.value;
+            localStorage.setItem("model_gemini_model", sel.value);
+            if (typeof geminiModel !== "undefined") geminiModel = sel.value;
+          };
+          pickerWrap.appendChild(sel);
+          if (modInp && !modInp.value.trim()) {
+            modInp.value = supported[0];
+          }
+          statusBox.innerText = `✅ تم جلب ${supported.length} نموذجاً متاحاً. اختر النموذج من القائمة أعلاه ثم اضغط اختبار الاتصال.`;
+        } catch (err) {
+          statusBox.innerText = "❌ خطأ شبكة أثناء جلب النماذج: " + err.message;
+        }
+      };
+
+      const testBtn = document.getElementById("ai-test-btn");
+      if (testBtn && testBtn.parentNode === box) {
+        box.insertBefore(listBtn, testBtn);
+        box.insertBefore(pickerWrap, testBtn);
+      } else {
+        box.appendChild(listBtn);
+        box.appendChild(pickerWrap);
+      }
+    }
+  }
+
+  const origOpenM = window.openM;
+  if (typeof origOpenM === "function") {
+    window.openM = function(id) {
+      origOpenM(id);
+      if (id === "m-ai") setTimeout(enhanceModal, 40);
+    };
+  }
+
+  const origAsk = window.askAgent;
+  window.askAgent = async function(s, userMsg) {
+    if (!s) return "";
+    if (!s.active) return "الحساب موقوف حالياً لإنهاء الخدمة.";
+
+    const key = (typeof geminiKey !== "undefined" && geminiKey) ? geminiKey : (localStorage.getItem("model_gemini_key") || "");
+    const mod = (typeof geminiModel !== "undefined" && geminiModel) ? geminiModel : (localStorage.getItem("model_gemini_model") || "gemini-3.8-flash");
+
+    if (key && typeof origAsk === "function") {
+      try {
+        const res = await Promise.race([
+          origAsk(s, userMsg),
+          new Promise(resolve => setTimeout(() => resolve("__TIMEOUT__"), 6500))
+        ]);
+        if (res && res !== "__TIMEOUT__" && !/^\s*(❌|تنبيه من Gemini)/i.test(String(res))) {
+          return res;
+        }
+        if (/high demand|503|overloaded|unavailable/i.test(String(res)) || res === "__TIMEOUT__") {
+          return buildPersonaFallback(s, userMsg, "ضغط مرتفع مؤقت على خوادم Gemini (503)");
+        }
+      } catch (e) {}
+    }
+
+    return buildPersonaFallback(s, userMsg, key ? "الرد الفوري بالشخصية والذاكرة المشتركة" : "لم يتم إدخال مفتاح API بعد");
+  };
+})();
+</script>
+
 </body>
 </html>
