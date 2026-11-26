@@ -3,1301 +3,510 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MODEL Studio OS — منصة إدارة مكتب الديكور والهندسة</title>
+<title>MODEL Studio OS — مكتب الديكور والهندسة</title>
 <style>
-  :root {
-    --bg: #080b10;
-    --surface: #0f1520;
-    --surface-2: #161f30;
-    --surface-3: #1e2a40;
-    --border: rgba(212, 175, 55, 0.22);
-    --border-subtle: rgba(148, 163, 184, 0.14);
-    --gold: #d4af37;
-    --gold-soft: rgba(212, 175, 55, 0.14);
-    --emerald: #10b981;
-    --rose: #f43f5e;
-    --amber: #f59e0b;
-    --sky: #38bdf8;
-    --text: #f8fafc;
-    --muted: #94a3b8;
-  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #090d16; color: #f8fafc; }
+  #scene-host { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); }
-  #scene-host { position: fixed; inset: 0; width: 100%; height: 100%; }
-
-  /* شريط القيادة العلوي */
-  .command-bar {
-    position: fixed; top: 12px; left: 12px; right: 12px; height: 54px;
-    background: rgba(12, 18, 28, 0.88); backdrop-filter: blur(18px);
-    border: 1px solid var(--border); border-radius: 14px;
-    padding: 0 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    z-index: 30; box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55);
+  .topbar {
+    position: fixed; top: 12px; left: 12px; right: 12px; min-height: 52px;
+    background: rgba(12, 18, 28, 0.92); backdrop-filter: blur(14px);
+    border: 1px solid rgba(212, 175, 55, 0.32); border-radius: 14px;
+    padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    z-index: 30;
   }
-  .brand { display: flex; align-items: center; gap: 12px; }
-  .brand-mark {
-    width: 34px; height: 34px; border-radius: 9px;
-    background: linear-gradient(135deg, #d4af37, #8a6914);
-    color: #090d14; font-weight: 900; display: grid; place-items: center; font-size: 15px;
-  }
-  .brand-name { font-size: 14.5px; font-weight: 800; letter-spacing: 0.4px; color: #f8fafc; }
-  .brand-sub { font-size: 11px; color: var(--gold); }
-
-  .top-actions { display: flex; align-items: center; gap: 7px; overflow-x: auto; }
+  .title { font-size: 14px; font-weight: 800; color: #d4af37; }
+  .btns { display: flex; gap: 6px; flex-wrap: wrap; }
   .btn {
-    background: var(--surface-2); color: var(--text); border: 1px solid var(--border-subtle);
-    padding: 6px 11px; border-radius: 8px; font-size: 12px; font-weight: 600;
-    cursor: pointer; transition: all 0.16s ease; white-space: nowrap;
+    background: #162032; color: #f8fafc; border: 1px solid rgba(148,163,184,0.22);
+    padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;
   }
-  .btn:hover { border-color: var(--gold); background: var(--surface-3); }
-  .btn.active { background: var(--gold); color: #090d14; border-color: var(--gold); }
-  .btn-gold { background: linear-gradient(135deg, #d4af37, #b58d1b); color: #090d14; border: none; font-weight: 700; }
-  .btn-gold:hover { filter: brightness(1.08); }
-  .btn-emerald { background: rgba(16, 185, 129, 0.16); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4); }
-  .btn-rose { background: rgba(244, 63, 94, 0.16); color: #fda4af; border-color: rgba(244, 63, 94, 0.4); }
-  .btn-amber { background: rgba(245, 158, 11, 0.16); color: #fcd34d; border-color: rgba(245, 158, 11, 0.4); }
+  .btn:hover { border-color: #d4af37; }
+  .btn.gold { background: #d4af37; color: #090d16; border-color: #d4af37; }
 
-  /* اللوحة الجانبية اليمنى: المقر والكادر */
-  .hq-sidebar {
-    position: fixed; top: 78px; right: 12px; bottom: 12px; width: 280px;
-    background: rgba(12, 18, 28, 0.88); backdrop-filter: blur(18px);
-    border: 1px solid var(--border-subtle); border-radius: 16px;
-    padding: 13px; z-index: 20; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;
+  .sidebar {
+    position: fixed; top: 76px; right: 12px; bottom: 12px; width: 265px;
+    background: rgba(12, 18, 28, 0.92); backdrop-filter: blur(14px);
+    border: 1px solid rgba(148,163,184,0.18); border-radius: 16px;
+    padding: 12px; z-index: 20; overflow-y: auto;
   }
-  .panel-title { font-size: 11px; font-weight: 800; color: var(--gold); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-  .zone-pills { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .zone-pill { padding: 6px 8px; font-size: 11.5px; text-align: center; }
+  .sec { font-size: 11px; color: #d4af37; font-weight: 800; margin-bottom: 6px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+  .dept { font-size: 11.5px; font-weight: 700; color: #e2e8f0; background: #182336; border-right: 3px solid #d4af37; padding: 5px 8px; border-radius: 6px; margin: 8px 0 5px; }
+  .emp {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 8px; border-radius: 8px; background: #121b2b; margin-bottom: 4px; cursor: pointer; font-size: 12px;
+    border: 1px solid transparent;
+  }
+  .emp:hover, .emp.active { border-color: #d4af37; background: rgba(212,175,55,0.16); }
 
-  .dept-group { margin-bottom: 8px; }
-  .dept-header {
-    font-size: 11.5px; font-weight: 700; color: #cbd5e1;
-    background: rgba(30, 42, 64, 0.75); border-right: 3px solid var(--gold);
-    padding: 5px 8px; border-radius: 6px; margin-bottom: 5px; display: flex; justify-content: space-between;
+  .drawer {
+    position: fixed; top: 76px; left: 12px; bottom: 12px; width: 420px; max-width: calc(100vw - 295px);
+    background: rgba(11, 16, 26, 0.96); border: 1px solid rgba(212,175,55,0.38);
+    border-radius: 16px; z-index: 28; display: none; flex-direction: column; overflow: hidden;
   }
-  .staff-card {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 7px 9px; border-radius: 9px; background: rgba(22, 31, 48, 0.65);
-    border: 1px solid transparent; margin-bottom: 4px; cursor: pointer; transition: 0.15s;
-  }
-  .staff-card:hover, .staff-card.selected { border-color: var(--gold); background: rgba(212, 175, 55, 0.12); }
-  .staff-card.terminated { opacity: 0.48; border-style: dashed; border-color: rgba(244, 63, 94, 0.4); }
-  .staff-main { display: flex; align-items: center; gap: 8px; }
-  .avatar-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-  .staff-name { font-size: 12.5px; font-weight: 700; }
-  .staff-meta { font-size: 10.5px; color: var(--muted); }
-  .rank-badge { font-size: 10px; padding: 2px 6px; border-radius: 999px; background: var(--surface-3); color: var(--gold); font-weight: 700; }
+  .d-head { padding: 12px 14px; background: #141e30; border-bottom: 1px solid rgba(148,163,184,0.15); display: flex; justify-content: space-between; align-items: flex-start; }
+  .d-tabs { display: flex; border-bottom: 1px solid rgba(148,163,184,0.15); }
+  .d-tab { flex: 1; padding: 8px; font-size: 11.5px; font-weight: 700; background: transparent; color: #94a3b8; border: none; cursor: pointer; }
+  .d-tab.active { color: #d4af37; border-bottom: 2px solid #d4af37; background: rgba(212,175,55,0.08); }
+  .d-body { flex: 1; overflow-y: auto; padding: 12px; display: none; flex-direction: column; gap: 9px; }
+  .d-body.active { display: flex; }
+  .msgs { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+  .msg { padding: 8px 11px; border-radius: 10px; font-size: 12px; line-height: 1.55; white-space: pre-wrap; max-width: 90%; }
+  .msg.u { align-self: flex-start; background: #1d4ed8; color: #fff; }
+  .msg.a { align-self: flex-end; background: #1a2538; color: #f1f5f9; border: 1px solid rgba(148,163,184,0.16); }
+  .row { display: flex; gap: 6px; }
+  .inp, .ta, .sel { width: 100%; background: #141f32; color: #fff; border: 1px solid rgba(148,163,184,0.22); border-radius: 8px; padding: 7px 9px; font-size: 12px; }
+  .box { background: #141f32; border: 1px solid rgba(148,163,184,0.15); border-radius: 10px; padding: 10px; font-size: 12px; line-height: 1.55; }
 
-  /* لوحة التحكم بالموظف (تفتح يسار الشاشة) */
-  .inspector-panel {
-    position: fixed; top: 78px; left: 12px; bottom: 12px; width: 470px; max-width: calc(100vw - 308px);
-    background: rgba(11, 16, 26, 0.96); backdrop-filter: blur(20px);
-    border: 1px solid var(--border); border-radius: 18px;
-    z-index: 28; display: none; flex-direction: column; overflow: hidden;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.72);
-  }
-  .inspector-head {
-    padding: 14px 16px; background: rgba(18, 26, 40, 0.95);
-    border-bottom: 1px solid var(--border-subtle);
-    display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
-  }
-  .inspector-name { font-size: 17px; font-weight: 800; color: #fff; }
-  .inspector-sub { font-size: 11.5px; color: var(--gold); margin-top: 2px; }
-  .inspector-persona { font-size: 12px; color: #cbd5e1; margin-top: 5px; line-height: 1.45; }
-
-  .hr-strip {
-    display: flex; gap: 6px; padding: 8px 14px; background: rgba(15, 22, 34, 0.9);
-    border-bottom: 1px solid var(--border-subtle); flex-wrap: wrap;
-  }
-
-  .subtabs {
-    display: flex; background: rgba(15, 22, 34, 0.7); border-bottom: 1px solid var(--border-subtle);
-  }
-  .subtab {
-    flex: 1; padding: 9px 6px; font-size: 11.5px; font-weight: 700; text-align: center;
-    background: transparent; border: none; border-bottom: 2px solid transparent;
-    color: var(--muted); cursor: pointer; border-radius: 0;
-  }
-  .subtab.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(212, 175, 55, 0.08); }
-
-  .subview { flex: 1; overflow-y: auto; padding: 14px; display: none; flex-direction: column; gap: 11px; }
-  .subview.active { display: flex; }
-
-  .chat-box { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 9px; }
-  .bubble { padding: 10px 12px; border-radius: 12px; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; max-width: 90%; }
-  .bubble.user { align-self: flex-start; background: #1d4ed8; color: #fff; border-bottom-right-radius: 3px; }
-  .bubble.agent { align-self: flex-end; background: var(--surface-2); color: #f1f5f9; border: 1px solid var(--border-subtle); border-bottom-left-radius: 3px; }
-  .bubble-who { font-size: 10.5px; font-weight: 700; color: var(--gold); margin-bottom: 3px; }
-
-  .composer-row { display: flex; gap: 7px; padding-top: 8px; border-top: 1px solid var(--border-subtle); }
-  .field, .textarea, .select {
-    width: 100%; background: var(--surface-2); color: var(--text);
-    border: 1px solid var(--border-subtle); border-radius: 9px; padding: 8px 10px; font-size: 12.5px; outline: none;
-  }
-  .field:focus, .textarea:focus, .select:focus { border-color: var(--gold); }
-  .textarea { min-height: 70px; resize: vertical; }
-
-  .card {
-    background: rgba(22, 31, 48, 0.78); border: 1px solid var(--border-subtle);
-    border-radius: 12px; padding: 11px; font-size: 12.5px; line-height: 1.6;
-  }
-  .card h4 { font-size: 12.5px; color: var(--gold); margin-bottom: 6px; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-  .chip { font-size: 11px; padding: 3px 9px; border-radius: 999px; background: rgba(212, 175, 55, 0.14); color: #fde68a; border: 1px solid rgba(212, 175, 55, 0.35); }
-  .inline-form { display: flex; gap: 6px; margin-top: 8px; }
-
-  .log-item {
-    background: rgba(15, 22, 34, 0.85); border-right: 3px solid var(--gold);
-    padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.5;
-  }
-  .log-meta { font-size: 10.5px; color: var(--muted); margin-top: 3px; }
-
-  /* النوافذ المنبثقة للعمليات الكبرى: أوامر الأقسام، الاجتماعات، الذاكرة، إعدادات الذكاء */
-  .modal-overlay {
-    position: fixed; inset: 0; background: rgba(3, 6, 12, 0.78); backdrop-filter: blur(6px);
-    display: none; align-items: center; justify-content: center; z-index: 50; padding: 16px;
-  }
-  .modal-card {
-    width: 100%; max-width: 640px; max-height: 86vh; overflow-y: auto;
-    background: #0e1522; border: 1px solid var(--border); border-radius: 18px;
-    padding: 18px; display: flex; flex-direction: column; gap: 12px;
-    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.8);
-  }
-  .modal-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px; }
-  .modal-title { font-size: 15px; font-weight: 800; color: var(--gold); }
-
-  .toast {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    background: #111b2e; border: 1px solid var(--gold); color: #fff;
-    padding: 8px 16px; border-radius: 999px; font-size: 12px; z-index: 70;
-    display: none; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-  }
+  .modal-bg { position: fixed; inset: 0; background: rgba(3,6,12,0.78); display: none; align-items: center; justify-content: center; z-index: 50; padding: 14px; }
+  .modal-box { width: 100%; max-width: 560px; max-height: 85vh; overflow-y: auto; background: #0e1522; border: 1px solid rgba(212,175,55,0.4); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  #err-banner { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); background: #7f1d1d; color: #fecaca; border: 1px solid #ef4444; padding: 8px 14px; border-radius: 10px; font-size: 12px; z-index: 60; display: none; }
 </style>
 </head>
 <body>
 
-<header class="command-bar">
-  <div class="brand">
-    <div class="brand-mark">M</div>
-    <div>
-      <div class="brand-name">MODEL STUDIO — نظام قيادة المقر الهندسي</div>
-      <div class="brand-sub">إدارة الكادر • الذكاء التعاوني • الاجتماعات • الذاكرة المشتركة</div>
-    </div>
-  </div>
+<div id="scene-host"></div>
 
-  <div class="top-actions">
-    <button class="btn active" id="view-overview" onclick="setCameraView('overview')">المنظور العام</button>
-    <button class="btn" id="view-top" onclick="setCameraView('top')">المسقط العلوي</button>
-    <button class="btn" id="view-meeting" onclick="setCameraView('meeting')">قاعة الاجتماعات</button>
-    <button class="btn" id="view-pantry" onclick="setCameraView('pantry')">البوفيه</button>
-    <button class="btn btn-gold" onclick="openModal('broadcast-modal')">📢 أوامر الأقسام والجميع</button>
-    <button class="btn btn-emerald" onclick="openModal('meeting-modal')">🤝 عقد اجتماع</button>
-    <button class="btn" onclick="openModal('memory-modal')">🧠 الذاكرة المشتركة</button>
-    <button class="btn btn-amber" onclick="openModal('ai-modal')">⚡ إعدادات AI</button>
+<div class="topbar">
+  <div class="title">🏛️ MODEL STUDIO OS — مكتب الديكور والهندسة</div>
+  <div class="btns">
+    <button class="btn gold" onclick="camPreset('overview')">منظور عام</button>
+    <button class="btn" onclick="camPreset('top')">علوي</button>
+    <button class="btn" onclick="camPreset('reception')">الاستقبال</button>
+    <button class="btn" onclick="camPreset('meeting')">الاجتماعات</button>
+    <button class="btn" onclick="camPreset('pantry')">البوفيه</button>
+    <button class="btn gold" onclick="openM('m-cast')">📢 أمر عام</button>
+    <button class="btn" onclick="openM('m-meet')">🤝 اجتماع</button>
+    <button class="btn" onclick="openM('m-ai')">⚡ AI Key</button>
   </div>
-</header>
+</div>
 
-<aside class="hq-sidebar">
-  <div>
-    <div class="panel-title">توجيه الكاميرا إلى مناطق المقر</div>
-    <div class="zone-pills">
-      <button class="btn zone-pill" onclick="setCameraView('reception')">الاستقبال</button>
-      <button class="btn zone-pill" onclick="setCameraView('exec')">الإدارة العليا</button>
-      <button class="btn zone-pill" onclick="setCameraView('eng')">القسم الهندسي</button>
-      <button class="btn zone-pill" onclick="setCameraView('mkt')">التسويق والفرص</button>
-      <button class="btn zone-pill" style="grid-column: span 2;" onclick="setCameraView('admin')">الإدارة المساندة والمالية</button>
-    </div>
+<aside class="sidebar">
+  <div class="sec">الأقسام والمناطق</div>
+  <div class="grid2">
+    <button class="btn" onclick="camPreset('exec')">الإدارة العليا</button>
+    <button class="btn" onclick="camPreset('eng')">القسم الهندسي</button>
+    <button class="btn" onclick="camPreset('mkt')">التسويق والفرص</button>
+    <button class="btn" onclick="camPreset('admin')">الإدارة المساندة</button>
   </div>
-
-  <div id="staff-list"></div>
+  <div class="sec">الكادر (15 موظفاً)</div>
+  <div id="staff-nav"></div>
 </aside>
 
-<section class="inspector-panel" id="inspector">
-  <div class="inspector-head">
+<section class="drawer" id="drawer">
+  <div class="d-head">
     <div>
-      <div class="inspector-name" id="insp-name">اسم الموظف</div>
-      <div class="inspector-sub" id="insp-sub">المسمى • القسم • المستوى</div>
-      <div class="inspector-persona" id="insp-persona">الشخصية والرأي المهني</div>
+      <div id="d-name" style="font-size:16px;font-weight:800;"></div>
+      <div id="d-role" style="font-size:11.5px;color:#d4af37;margin-top:2px;"></div>
+      <div id="d-persona" style="font-size:11.5px;color:#cbd5e1;margin-top:4px;"></div>
     </div>
-    <button class="btn" onclick="closeInspector()">✕</button>
+    <button class="btn" onclick="closeDrawer()">✕</button>
   </div>
-
-  <div class="hr-strip">
-    <button class="btn btn-emerald" onclick="hrAction('promote')">⬆ ترقية</button>
-    <button class="btn btn-gold" onclick="hrAction('reward')">🏆 مكافأة</button>
-    <button class="btn btn-amber" onclick="hrAction('warn')">⚠ إنذار/خصم</button>
-    <button class="btn btn-rose" id="fire-btn" onclick="hrAction('toggleFire')">⛔ إنهاء خدمة</button>
+  <div style="display:flex;gap:6px;padding:8px 12px;background:#101827;border-bottom:1px solid rgba(148,163,184,0.14);flex-wrap:wrap;">
+    <button class="btn" style="color:#6ee7b7;border-color:rgba(16,185,129,0.4);" onclick="doHr('promote')">⬆ ترقية</button>
+    <button class="btn" style="color:#fde68a;border-color:rgba(212,175,55,0.4);" onclick="doHr('reward')">🏆 مكافأة</button>
+    <button class="btn" style="color:#fda4af;border-color:rgba(244,63,94,0.4);" onclick="doHr('fire')">⛔ إنهاء/إعادة</button>
   </div>
-
-  <div class="subtabs">
-    <button class="subtab active" id="st-chat" onclick="switchSubtab('chat')">💬 دردشة وأوامر</button>
-    <button class="subtab" id="st-profile" onclick="switchSubtab('profile')">🎯 الخبرات والشخصية</button>
-    <button class="subtab" id="st-feedback" onclick="switchSubtab('feedback')">📝 تغذية راجعة</button>
-    <button class="subtab" id="st-research" onclick="switchSubtab('research')">🔎 بحث مستمر</button>
+  <div class="d-tabs">
+    <button class="d-tab active" id="tb-chat" onclick="openSub('chat')">دردشة وأوامر</button>
+    <button class="d-tab" id="tb-prof" onclick="openSub('prof')">الخبرات والشخصية</button>
+    <button class="d-tab" id="tb-fb" onclick="openSub('fb')">تغذية راجعة</button>
   </div>
-
-  <!-- الدردشة -->
-  <div class="subview active" id="sv-chat">
-    <div class="chat-box" id="chat-box"></div>
-    <div class="composer-row">
-      <input type="text" class="field" id="chat-input" placeholder="ناقش رأيه، اطلب تحليلاً، أو وجّه أمراً مباشراً..." onkeydown="if(event.key==='Enter') sendStaffChat()">
-      <button class="btn btn-gold" onclick="sendStaffChat()">إرسال</button>
+  <div class="d-body active" id="sv-chat">
+    <div class="msgs" id="msgs"></div>
+    <div class="row">
+      <input class="inp" id="chat-inp" placeholder="ناقش الموظف أو أعطه أمراً..." onkeydown="if(event.key==='Enter') sendChat()">
+      <button class="btn gold" onclick="sendChat()">إرسال</button>
     </div>
   </div>
-
-  <!-- الخبرات والشخصية -->
-  <div class="subview" id="sv-profile">
-    <div class="card">
-      <h4>الشخصية المستقلة وأسلوب الرأي</h4>
-      <div id="prof-style"></div>
-    </div>
-    <div class="card">
-      <h4>الخبرات والتخصصات (قابلة للإضافة من قبلك)</h4>
-      <div id="prof-exp"></div>
-      <div class="chips" id="prof-skills"></div>
-      <div class="inline-form">
-        <input type="text" class="field" id="new-skill-input" placeholder="أضف خبرة أو مهارة جديدة للموظف...">
-        <button class="btn btn-gold" onclick="addSkill()">إضافة</button>
-      </div>
-    </div>
-    <div class="card">
-      <h4>السجل الإداري والتحفيزي</h4>
-      <div id="prof-hr-log"></div>
+  <div class="d-body" id="sv-prof">
+    <div class="box" id="prof-box"></div>
+    <div class="row">
+      <input class="inp" id="skill-inp" placeholder="أضف خبرة جديدة للموظف...">
+      <button class="btn gold" onclick="addSkill()">إضافة</button>
     </div>
   </div>
-
-  <!-- التغذية الراجعة المفتوحة -->
-  <div class="subview" id="sv-feedback">
-    <div class="card">
-      <h4>إضافة تغذية راجعة مفتوحة</h4>
-      <textarea class="textarea" id="fb-textarea" placeholder="اكتب توجيهاتك أو تقييمك المفتوح للموظف ليعتمدها في قراراته وردوده..."></textarea>
-      <button class="btn btn-gold" style="margin-top:8px; width:100%;" onclick="submitFeedback()">حفظ التغذية الراجعة وتحديث الذاكرة</button>
-    </div>
-    <div class="panel-title">سجل التغذية الراجعة</div>
-    <div id="fb-history" style="display:flex; flex-direction:column; gap:7px;"></div>
-  </div>
-
-  <!-- البحث المستمر -->
-  <div class="subview" id="sv-research">
-    <div class="card">
-      <h4>محرك البحث المستمر للموظف</h4>
-      <p style="font-size:11.5px; color:var(--muted); margin-bottom:8px;">يقوم الموظف ببحث مستمر وتوليد خلاصات تخصصية بناءً على مجاله وخبراته وملاحظاتك.</p>
-      <div style="display:flex; gap:7px; flex-wrap:wrap;">
-        <button class="btn btn-emerald" id="research-toggle-btn" onclick="toggleContinuousResearch()">▶ تشغيل البحث المستمر</button>
-        <button class="btn" onclick="runResearchCycleForActive()">⚡ تنفيذ دورة بحث الآن</button>
-      </div>
-    </div>
-    <div class="panel-title">نتائج البحث والتقارير المستمرة</div>
-    <div id="research-feed" style="display:flex; flex-direction:column; gap:7px;"></div>
+  <div class="d-body" id="sv-fb">
+    <textarea class="ta" id="fb-ta" placeholder="اكتب تغذية راجعة مفتوحة للموظف..."></textarea>
+    <button class="btn gold" onclick="addFeedback()">حفظ التغذية الراجعة</button>
+    <div id="fb-list" style="display:flex;flex-direction:column;gap:6px;"></div>
   </div>
 </section>
 
-<!-- نافذة أوامر الأقسام والجميع -->
-<div class="modal-overlay" id="broadcast-modal">
-  <div class="modal-card">
-    <div class="modal-top">
-      <div class="modal-title">📢 توجيه أمر أو قرار لقسم أو لكامل المكتب</div>
-      <button class="btn" onclick="closeModal('broadcast-modal')">✕</button>
-    </div>
-    <div>
-      <div class="panel-title">الجهة المستهدفة</div>
-      <select class="select" id="broadcast-target">
-        <option value="ALL">كامل المكتب (جميع الأقسام والموظفين النشطين)</option>
-        <option value="الإدارة العليا">الإدارة العليا</option>
-        <option value="القسم الهندسي">القسم الهندسي</option>
-        <option value="الاستقطاب والتسويق">الاستقطاب والتسويق</option>
-        <option value="الإدارة المساندة">الإدارة المساندة والمالية</option>
-      </select>
-    </div>
-    <div>
-      <div class="panel-title">نص الأمر أو التوجيه</div>
-      <textarea class="textarea" id="broadcast-text" placeholder="مثال: نبدأ غداً تجهيز ملف مشروع متكامل يجمع التصميم المعماري والداخلي وحصر الكميات والجدول الزمني..."></textarea>
-    </div>
-    <button class="btn btn-gold" onclick="executeBroadcast()">إرسال الأمر وجمع آراء وتفاعل الفريق</button>
-    <div id="broadcast-results" style="display:flex; flex-direction:column; gap:8px;"></div>
+<div class="modal-bg" id="m-cast">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;"><strong style="color:#d4af37;">📢 توجيه أمر لقسم أو للجميع</strong><button class="btn" onclick="closeM('m-cast')">✕</button></div>
+    <select class="sel" id="cast-target">
+      <option value="ALL">كامل المكتب (الجميع)</option>
+      <option value="الإدارة العليا">الإدارة العليا</option>
+      <option value="القسم الهندسي">القسم الهندسي</option>
+      <option value="الاستقطاب والتسويق">الاستقطاب والتسويق</option>
+      <option value="الإدارة المساندة">الإدارة المساندة</option>
+    </select>
+    <textarea class="ta" id="cast-txt" placeholder="اكتب الأمر الإداري أو التوجيه هنا..."></textarea>
+    <button class="btn gold" onclick="runBroadcast()">إرسال وجمع الآراء</button>
+    <div id="cast-out" style="display:flex;flex-direction:column;gap:6px;"></div>
   </div>
 </div>
 
-<!-- نافذة عقد اجتماع -->
-<div class="modal-overlay" id="meeting-modal">
-  <div class="modal-card">
-    <div class="modal-top">
-      <div class="modal-title">🤝 قاعة الاجتماعات — جلسة نقاش وقرار جماعي</div>
-      <button class="btn" onclick="closeModal('meeting-modal')">✕</button>
-    </div>
-    <div>
-      <div class="panel-title">موضوع الاجتماع / القضية المطروحة</div>
-      <input type="text" class="field" id="meeting-topic" placeholder="مثال: توحيد معايير تسليم المخططات وعروض الأسعار وتقليل الهدر">
-    </div>
-    <div>
-      <div class="panel-title">المشاركون في الجلسة</div>
-      <select class="select" id="meeting-group">
-        <option value="ALL">اجتماع عام لكامل قيادات وأقسام المكتب</option>
-        <option value="الإدارة العليا">اجتماع الإدارة العليا (طارق، رامي، لينا)</option>
-        <option value="القسم الهندسي">اجتماع القسم الهندسي (تصميم، إنشائي، ديكور، واجهات، BOQ، إشراف)</option>
-        <option value="الاستقطاب والتسويق">اجتماع التسويق والفرص (نديم، آدم، يارا)</option>
-        <option value="الإدارة المساندة">اجتماع الإدارة المساندة (دانا، فؤاد، سمر)</option>
-      </select>
-    </div>
-    <button class="btn btn-emerald" onclick="runMeetingSession()">بدء الاجتماع وتوليد المحضر والآراء المترابطة</button>
-    <div id="meeting-output" style="display:flex; flex-direction:column; gap:8px;"></div>
+<div class="modal-bg" id="m-meet">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;"><strong style="color:#d4af37;">🤝 قاعة الاجتماعات</strong><button class="btn" onclick="closeM('m-meet')">✕</button></div>
+    <input class="inp" id="meet-topic" placeholder="موضوع الاجتماع...">
+    <button class="btn gold" onclick="runMeeting()">بدء الاجتماع وتوليد المحضر</button>
+    <div id="meet-out" style="display:flex;flex-direction:column;gap:6px;"></div>
   </div>
 </div>
 
-<!-- نافذة الذاكرة المشتركة -->
-<div class="modal-overlay" id="memory-modal">
-  <div class="modal-card">
-    <div class="modal-top">
-      <div class="modal-title">🧠 الذاكرة المشتركة للمكتب (Shared HQ Memory)</div>
-      <button class="btn" onclick="closeModal('memory-modal')">✕</button>
-    </div>
-    <p style="font-size:12px; color:var(--muted);">أي قرار أو اجتماع أو ترقية أو تغذية راجعة تُسجَّل هنا لتكون مرجعاً مشتركاً يبني عليه الجميع آراءهم.</p>
-    <div id="shared-memory-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+<div class="modal-bg" id="m-ai">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;"><strong style="color:#d4af37;">⚡ ربط Gemini API</strong><button class="btn" onclick="closeM('m-ai')">✕</button></div>
+    <input class="inp" type="password" id="ai-key" placeholder="AIzaSy...">
+    <button class="btn gold" onclick="saveKey()">حفظ المفتاح</button>
   </div>
 </div>
 
-<!-- نافذة إعدادات الذكاء الاصطناعي -->
-<div class="modal-overlay" id="ai-modal">
-  <div class="modal-card">
-    <div class="modal-top">
-      <div class="modal-title">⚡ ربط الشخصيات بمحرك الذكاء الاصطناعي</div>
-      <button class="btn" onclick="closeModal('ai-modal')">✕</button>
-    </div>
-    <p style="font-size:12px; color:var(--muted); line-height:1.6;">
-      عند إدخال مفتاح <strong>Gemini API Key</strong>، سيقوم كل موظف بتوليد ردود حقيقية متفاعلة مع شخصيته وخبراته وآراء زملائه والذاكرة المشتركة. وإذا لم يُدخل مفتاح، يعمل النظام بمحرك حواري ذكي محلي يحاكي التخصص والآراء دون توقف.
-    </p>
-    <div>
-      <div class="panel-title">Gemini API Key (اختياري — يُحفظ محلياً في متصفحك)</div>
-      <input type="password" class="field" id="gemini-key-input" placeholder="AIzaSy...">
-    </div>
-    <div>
-      <div class="panel-title">النموذج (Model)</div>
-      <input type="text" class="field" id="gemini-model-input" value="gemini-2.5-flash">
-    </div>
-    <button class="btn btn-gold" onclick="saveAiConfig()">حفظ إعدادات الذكاء الاصطناعي</button>
-  </div>
-</div>
+<div id="err-banner"></div>
 
-<div class="toast" id="toast"></div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-const INITIAL_STAFF = [
-  { id: "tareq", name: "م. طارق", role: "المدير العام", dept: "الإدارة العليا", rank: "قيادي", salaryLevel: 5, active: true,
-    persona: "حازم وصاحب رؤية استراتيجية، يزن القرارات بزاوية التوسع والسمعة السوقية والعائد طويل المدى.",
-    style: "يربط كل خطوة بالرؤية العامة للمكتب وجودة مخرجاته أمام العملاء الكبار.",
-    exp: "قيادة المكاتب الهندسية، التوسع الاستراتيجي، الحوكمة، وبناء الشراكات الكبرى.",
-    skills: ["القيادة الاستراتيجية", "الحوكمة", "تطوير الأعمال"], stance: "يؤيد التميز النوعي والانضباط المؤسسي قبل التوسع العشوائي.",
-    x: -11.5, z: -8.5, color: 0xd4af37 },
-
-  { id: "rami", name: "م. رامي", role: "المدير التنفيذي", dept: "الإدارة العليا", rank: "تنفيذي أول", salaryLevel: 5, active: true,
-    persona: "عملي وصارم في التنفيذ، يركز على تحويل التوجهات إلى خطوات يومية واضحة وتقليل الهدر الزمني.",
-    style: "يطالب بوضوح المسؤوليات والمواعيد النهائية ويرصد أي تعثر تشغيلي مبكراً.",
-    exp: "إدارة العمليات، جدولة التنفيذ، الكفاءة التشغيلية، ومتابعة سير العمل بين الأقسام.",
-    skills: ["إدارة العمليات", "جدولة التنفيذ", "الكفاءة التشغيلية"], stance: "يرى أن التكامل بين الهندسة والتسويق والمالية هو مفتاح سرعة الإنجاز.",
-    x: -6.5, z: -8.5, color: 0x38bdf8 },
-
-  { id: "lina", name: "م. لينا", role: "مديرة المشاريع", dept: "الإدارة العليا", rank: "قيادي", salaryLevel: 4, active: true,
-    persona: "دقيقة ومنظمة، تربط بين مراحل التصميم والتنفيذ والتسليم وتراقب المخاطر الزمنية.",
-    style: "تعتمد على تقسيم المشاريع إلى حزم عمل واضحة ونقاط تحقق قبل الانتقال للمرحلة التالية.",
-    exp: "إدارة المشاريع، تنسيق التخصصات، ضبط الجداول الزمنية، ومتابعة التسليمات.",
-    skills: ["إدارة المشاريع", "تنسيق التخصصات", "إدارة المخاطر"], stance: "تؤكد أن وضوح النطاق منذ البداية يمنع التعديلات المتأخرة واستنزاف الفريق.",
-    x: -1.5, z: -8.5, color: 0xf472b6 },
-
-  { id: "karim", name: "م. كريم", role: "مهندس معماري", dept: "القسم الهندسي", rank: "أول", salaryLevel: 4, active: true,
-    persona: "معماري يولي اهتماماً عميقاً للكتلة والفراغ والضوء الطبيعي والهوية المعمارية للمبنى.",
-    style: "يبدأ من قراءة الوظيفة والمحيط العمراني قبل رسم التفاصيل المعمارية.",
-    exp: "التصميم المعماري، دراسة الفراغات، المخططات التنفيذية، والحلول المعمارية المتكاملة.",
-    skills: ["التصميم المعماري", "دراسة الفراغات", "المخططات التنفيذية"], stance: "يرى أن المعمار الناجح يجمع بين الأصالة والوظيفة الحديثة دون تكلف.",
-    x: -12, z: -1.5, color: 0x10b981 },
-
-  { id: "hani", name: "م. هاني", role: "مهندس مدني وإنشائي", dept: "القسم الهندسي", rank: "أول", salaryLevel: 4, active: true,
-    persona: "رصين وتحليلي، يضع السلامة الإنشائية والكفاءة الاقتصادية للنظام الإنشائي في المقام الأول.",
-    style: "يناقش البدائل الإنشائية بالأرقام والبحور والأحمال والاشتراطات الفنية.",
-    exp: "التحليل والنظام الإنشائي، دراسة الأحمال، المواصفات الإنشائية، ومعالجة العناصر الإنشائية.",
-    skills: ["الأنظمة الإنشائية", "دراسة الأحمال", "المواصفات الإنشائية"], stance: "يدافع عن الحلول الإنشائية المتزنة التي تخدم التصميم بأقل تكلفة آمنة.",
-    x: -7.5, z: -1.5, color: 0x0ea5e9 },
-
-  { id: "salma", name: "م. سلمى", role: "مصممة ديكور داخلي", dept: "القسم الهندسي", rank: "أول", salaryLevel: 4, active: true,
-    persona: "حساسة للتفاصيل والجماليات الداخلية، تتقن تناغم الخامات والإضاءة والألوان داخل الفراغ.",
-    style: "تبني التجربة الداخلية على الإحساس المريح، تدرج الإضاءة، وصدق الخامات.",
-    exp: "التصميم الداخلي، اختيار الخامات والتشطيبات، تصميم الإضاءة الداخلية، وتنسيق الفراغات.",
-    skills: ["التصميم الداخلي", "الخامات والتشطيبات", "الإضاءة الداخلية"], stance: "تعتبر التفاصيل الصغيرة والإضاءة المدروسة هي ما يميز الديكور الحقيقي عن التقليدي.",
-    x: -3, z: -1.5, color: 0xf59e0b },
-
-  { id: "ziad", name: "م. زياد", role: "مصمم واجهات وديكور خارجي", dept: "القسم الهندسي", rank: "متخصص", salaryLevel: 3, active: true,
-    persona: "بصري ومبتكر في الواجهات والمداخل والمساحات الخارجية، يربط الواجهة بالبيئة المحيطة.",
-    style: "يركز على الانطباع الأول للواجهة، توازن الكتل، وتكامل العناصر الخارجية مع المشهد العام.",
-    exp: "تصميم الواجهات، الديكور الخارجي، المداخل والمساحات الخارجية، والهوية البصرية للمباني.",
-    skills: ["تصميم الواجهات", "الديكور الخارجي", "المساحات الخارجية"], stance: "يرى أن الواجهة يجب أن تعبر بصدق عن وظيفة المبنى وشخصية مالكه.",
-    x: -12, z: 3.5, color: 0x34d399 },
-
-  { id: "nader", name: "م. نادر", role: "مهندس كميات وتكاليف (BOQ)", dept: "القسم الهندسي", rank: "أول", salaryLevel: 4, active: true,
-    persona: "دقيق ورقمي، يحوّل الرسومات والمواصفات إلى جداول كميات وتكاليف شفافة وقابلة للتدقيق.",
-    style: "يبرز الفروقات السعرية والبدائل الاقتصادية مبكراً لحماية ميزانية المشروع.",
-    exp: "حصر الكميات، إعداد جداول BOQ، تسعير البنود، ومراجعة التكاليف التقديرية.",
-    skills: ["حصر الكميات", "جداول BOQ", "تحليل التكاليف"], stance: "يرى أن الدقة في حصر الكميات وتوصيف البنود تمنع النزاعات المالية لاحقاً.",
-    x: -7.5, z: 3.5, color: 0xa78bfa },
-
-  { id: "bilal", name: "م. بلال", role: "مهندس إشراف وموقع", dept: "القسم الهندسي", rank: "متخصص", salaryLevel: 3, active: true,
-    persona: "ميداني ويقظ، يركز على مطابقة التنفيذ الفعلي للمخططات والمواصفات ومراقبة جودة الموقع.",
-    style: "يربط الورقة بالموقع، ويتابع خطوات التنفيذ والملاحظات الميدانية أولاً بأول.",
-    exp: "الإشراف الهندسي، متابعة التنفيذ الميداني، فحص المطابقة، وتقارير الموقع.",
-    skills: ["الإشراف الهندسي", "جودة التنفيذ", "التقارير الميدانية"], stance: "يؤكد أن قابلية التنفيذ العملي في الموقع شرط أساسي لأي تصميم أو مواصفة.",
-    x: -3, z: 3.5, color: 0x2dd4bf },
-
-  { id: "nadeem", name: "م. نديم", role: "مستقطب المشاريع وتطوير الأعمال", dept: "الاستقطاب والتسويق", rank: "أول", salaryLevel: 4, active: true,
-    persona: "عملي واستباقي في اقتناص الفرص الهندسية وصياغة العروض التي تبرز قيمة المكتب.",
-    style: "يركز على فهم احتياج العميل بدقة وصياغة عرض فني وتجاري مقنع وسريع.",
-    exp: "استقطاب المشاريع، دراسة الفرص، كتابة عروض المشاريع، وتطوير علاقات العملاء.",
-    skills: ["استقطاب المشاريع", "عروض المشاريع", "تطوير العملاء"], stance: "يرى أن وضوح العروض وسرعة الاستجابة يعززان فرص الفوز بالمشاريع النوعية.",
-    x: 5.5, z: -8.5, color: 0xfbbf24 },
-
-  { id: "adam", name: "آدم", role: "مدير صفحات السوشيال ميديا", dept: "الاستقطاب والتسويق", rank: "متخصص", salaryLevel: 3, active: true,
-    persona: "سريع التنظيم والجدولة، يتابع حركة النشر والتفاعل والمنصات ويقيس استجابة الجمهور.",
-    style: "يدير قوائم النشر بدقة وحالات الاعتماد، ويقترح توقيتات وصيغ تناسب كل منصة.",
-    exp: "إدارة السوشيال ميديا، جدولة المحتوى، متابعة التفاعل، وتنظيم طوابير النشر.",
-    skills: ["إدارة المنصات", "جدولة المحتوى", "تحليل التفاعل"], stance: "يرى أن الاستمرارية والوضوح في النشر يبنيان حضوراً ثابتاً للمكتب أمام الجمهور.",
-    x: 10.5, z: -8.5, color: 0xfb923c },
-
-  { id: "yara", name: "يارا", role: "أخصائية التسويق والمحتوى", dept: "الاستقطاب والتسويق", rank: "متخصص", salaryLevel: 3, active: true,
-    persona: "صاحبة سرد مقنع، تحوّل المشاريع والأفكار الهندسية إلى محتوى يبرز القيمة والهوية.",
-    style: "تختار الكلمات والزاوية القصصية التي تقنع العميل دون مبالغة أو حشو.",
-    exp: "كتابة المحتوى، صياغة الرسائل التسويقية، عرض المشاريع، وتخطيط الحملات.",
-    skills: ["كتابة المحتوى", "الرسائل التسويقية", "بناء الهوية"], stance: "تؤمن بأن المحتوى الهندسي الجيد يشرح السبب وراء كل قرار تصميمي وتنفيذي.",
-    x: 8, z: -4, color: 0xf43f5e },
-
-  { id: "dana", name: "دانا", role: "مسؤولة الموارد البشرية (HR)", dept: "الإدارة المساندة", rank: "متخصص", salaryLevel: 3, active: true,
-    persona: "منصفة ومنظمة للأدوار، تحرص على وضوح المسؤوليات وتوازن الأحمال وتطوير الكفاءات.",
-    style: "تراقب توزيع المهام والالتزام المهني وتقترح مسارات تطوير وتقييم عادلة.",
-    exp: "إدارة الموارد البشرية، تحديد الأدوار، تقييم الأداء، وتطوير الكادر.",
-    skills: ["تحديد الأدوار", "تقييم الأداء", "تطوير الكفاءات"], stance: "ترى أن وضوح الصلاحيات والتقدير العادل يرفعان الإنتاجية ويمنعان الاحتكاك.",
-    x: 5.5, z: 2.5, color: 0xc084fc },
-
-  { id: "fouad", name: "أ. فؤاد", role: "المستشار القانوني", dept: "الإدارة المساندة", rank: "مستشار", salaryLevel: 4, active: true,
-    persona: "حذر ومدقق في الصياغات والالتزامات، يركّز على حماية حقوق المكتب وتقليل المخاطر.",
-    style: "يراجع الالتزامات التعاقدية وشروط التسليم والضمانات قبل اعتماد أي اتفاق.",
-    exp: "الاستشارات القانونية، مراجعة العقود، صياغة البنود، وإدارة المخاطر النظامية.",
-    skills: ["مراجعة العقود", "إدارة المخاطر", "حماية الحقوق"], stance: "يرى أن وضوح البنود التعاقدية مسبقاً يحمي الطرفين ويمنع الخلافات اللاحقة.",
-    x: 10.5, z: 2.5, color: 0x818cf8 },
-
-  { id: "samar", name: "سمر", role: "المحاسبة والمالية", dept: "الإدارة المساندة", rank: "متخصص", salaryLevel: 3, active: true,
-    persona: "منضبطة مالياً، تراقب التدفقات النقدية، الفواتير، الدفعات، والتزام المشاريع بالميزانية.",
-    style: "تعتمد على الأرقام الواضحة والشفافية المالية وتنبه مبكراً لأي انحراف في الإنفاق.",
-    exp: "المحاسبة المالية، متابعة التدفقات، الفوترة والمستخلصات، والتقارير المالية.",
-    skills: ["المحاسبة المالية", "التدفقات النقدية", "التقارير المالية"], stance: "تؤكد أن الانضباط المالي ومطابقة المستخلصات هما أساس استقرار المكتب.",
-    x: 8, z: 7, color: 0x22d3ee }
+const STAFF = [
+  { id:"tareq", name:"م. طارق", role:"المدير العام", dept:"الإدارة العليا", rank:"قيادي", lvl:5, active:true, persona:"حازم واستراتيجي، يركز على التميز والسمعة والعائد طويل المدى.", exp:"قيادة المكاتب الهندسية، التوسع، الحوكمة، والشراكات.", skills:["القيادة الاستراتيجية","الحوكمة"], x:-11.5, z:-8.5, col:0xd4af37 },
+  { id:"rami", name:"م. رامي", role:"المدير التنفيذي", dept:"الإدارة العليا", rank:"تنفيذي أول", lvl:5, active:true, persona:"عملي ومنضبط، يضبط الإيقاع اليومي والموارد والجداول الزمنية.", exp:"إدارة العمليات، جدولة التنفيذ، الكفاءة التشغيلية.", skills:["إدارة العمليات","الجدولة"], x:-6.5, z:-8.5, col:0x38bdf8 },
+  { id:"lina", name:"م. لينا", role:"مديرة المشاريع", dept:"الإدارة العليا", rank:"قيادي", lvl:4, active:true, persona:"دقيقة ومنظمة، تربط بين التصميم والتنفيذ والتسليم.", exp:"إدارة المشاريع، تنسيق التخصصات، متابعة المراحل.", skills:["إدارة المشاريع","التنسيق"], x:-1.5, z:-8.5, col:0xf472b6 },
+  { id:"karim", name:"م. كريم", role:"مهندس معماري", dept:"القسم الهندسي", rank:"أول", lvl:4, active:true, persona:"يهتم بالكتلة والفراغ والضوء الطبيعي والوظيفة المعمارية.", exp:"التصميم المعماري، دراسة الفراغات، المخططات التنفيذية.", skills:["التصميم المعماري","الفراغات"], x:-12, z:-1.5, col:0x10b981 },
+  { id:"hani", name:"م. هاني", role:"مهندس مدني وإنشائي", dept:"القسم الهندسي", rank:"أول", lvl:4, active:true, persona:"رصين ودقيق في الأنظمة الإنشائية والأحمال والسلامة.", exp:"التحليل والنظام الإنشائي، دراسة الأحمال، المواصفات.", skills:["الأنظمة الإنشائية","الأحمال"], x:-7.5, z:-1.5, col:0x0ea5e9 },
+  { id:"salma", name:"م. سلمى", role:"مصممة ديكور داخلي", dept:"القسم الهندسي", rank:"أول", lvl:4, active:true, persona:"حساسة للخامات والإضاءة والألوان وتناغم الفراغ الداخلي.", exp:"التصميم الداخلي، الخامات والتشطيبات، الإضاءة الداخلية.", skills:["الديكور الداخلي","الخامات والإضاءة"], x:-3, z:-1.5, col:0xf59e0b },
+  { id:"ziad", name:"م. زياد", role:"مصمم واجهات وديكور خارجي", dept:"القسم الهندسي", rank:"متخصص", lvl:3, active:true, persona:"يركز على الواجهات والمداخل وتكامل المشهد الخارجي.", exp:"تصميم الواجهات، الديكور الخارجي، المساحات الخارجية.", skills:["الواجهات","الديكور الخارجي"], x:-12, z:3.5, col:0x34d399 },
+  { id:"nader", name:"م. نادر", role:"مهندس كميات وتكاليف (BOQ)", dept:"القسم الهندسي", rank:"أول", lvl:4, active:true, persona:"رقمي ومدقق في حصر الكميات وجداول التكاليف والبدائل.", exp:"حصر الكميات، جداول BOQ، تحليل الأسعار والتكاليف.", skills:["حصر الكميات","BOQ"], x:-7.5, z:3.5, col:0xa78bfa },
+  { id:"bilal", name:"م. بلال", role:"مهندس إشراف وموقع", dept:"القسم الهندسي", rank:"متخصص", lvl:3, active:true, persona:"ميداني ويقظ، يطابق التنفيذ الفعلي مع المخططات والمواصفات.", exp:"الإشراف الهندسي، متابعة الموقع، فحص المطابقة.", skills:["الإشراف الميداني","جودة التنفيذ"], x:-3, z:3.5, col:0x2dd4bf },
+  { id:"nadeem", name:"م. نديم", role:"مستقطب المشاريع", dept:"الاستقطاب والتسويق", rank:"أول", lvl:4, active:true, persona:"استباقي في اقتناص الفرص وصياغة العروض للعملاء.", exp:"استقطاب المشاريع، دراسة الفرص، كتابة العروض.", skills:["اقتناص الفرص","العروض"], x:5.5, z:-8.5, col:0xfbbf24 },
+  { id:"adam", name:"آدم", role:"مدير السوشيال ميديا", dept:"الاستقطاب والتسويق", rank:"متخصص", lvl:3, active:true, persona:"منظم في جدولة النشر ومتابعة التفاعل والمنصات.", exp:"إدارة المنصات، جدولة المحتوى، متابعة التفاعل.", skills:["السوشيال ميديا","الجدولة"], x:10.5, z:-8.5, col:0xfb923c },
+  { id:"yara", name:"يارا", role:"أخصائية التسويق والمحتوى", dept:"الاستقطاب والتسويق", rank:"متخصص", lvl:3, active:true, persona:"تصوغ الرسائل التسويقية وسابقة الأعمال بوضوح وإقناع.", exp:"كتابة المحتوى، الرسائل التسويقية، عرض المشاريع.", skills:["المحتوى","الهوية التسويقية"], x:8, z:-4, col:0xf43f5e },
+  { id:"dana", name:"دانا", role:"الموارد البشرية (HR)", dept:"الإدارة المساندة", rank:"متخصص", lvl:3, active:true, persona:"تنظم الأدوار وتوازن المهام وتتابع الأداء والكفاءات.", exp:"تحديد الأدوار، تقييم الأداء، تطوير الكفاءات.", skills:["الموارد البشرية","تقييم الأداء"], x:5.5, z:2.5, col:0xc084fc },
+  { id:"fouad", name:"أ. فؤاد", role:"المستشار القانوني", dept:"الإدارة المساندة", rank:"مستشار", lvl:4, active:true, persona:"يدقق في العقود والالتزامات ويحمي حقوق المكتب.", exp:"مراجعة العقود، إدارة المخاطر، الصياغات النظامية.", skills:["العقود","المخاطر"], x:10.5, z:2.5, col:0x818cf8 },
+  { id:"samar", name:"سمر", role:"المحاسبة والمالية", dept:"الإدارة المساندة", rank:"متخصص", lvl:3, active:true, persona:"تضبط التدفقات النقدية والفواتير والميزانيات بدقة.", exp:"المحاسبة المالية، التدفقات، الفوترة والتقارير.", skills:["المحاسبة","التدفق المالي"], x:8, z:7, col:0x22d3ee }
 ];
 
-const STATE_KEY = "model_studio_os_state_v1";
-let state = loadState();
-let activeStaffId = null;
-let researchTimers = {};
+const mem = {};
+const sharedLog = ["تأسيس مقر MODEL الهندسي والديكور بكافة أقسامه."];
+let geminiKey = localStorage.getItem("model_gemini_key") || "";
+STAFF.forEach(s => {
+  mem[s.id] = { chats: [{ who:"a", text:`أهلاً أستاذ حازم. أنا ${s.name} (${s.role}).\n${s.persona}` }], fb: [] };
+});
 
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STATE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && Array.isArray(parsed.staff)) return parsed;
-    }
-  } catch (e) {}
+let curId = null;
+const avatarBodies = {};
+let camera, controls;
 
-  const staffMap = {};
-  INITIAL_STAFF.forEach(s => {
-    staffMap[s.id] = {
-      chats: [
-        {
-          who: "agent",
-          text: `أهلاً بك أستاذ حازم. أنا ${s.name} (${s.role}).\nموقفي ورأيي: ${s.stance}\nكيف يمكنني خدمتك أو ما القرار الذي تود مناقشته؟`
-        }
-      ],
-      feedback: [],
-      research: [],
-      hrLogs: [`تم التعيين في منظومة MODEL بمستوى (${s.rank}) — الدرجة ${s.salaryLevel}.`],
-      continuousResearch: false
-    };
-  });
-
-  return {
-    staff: JSON.parse(JSON.stringify(INITIAL_STAFF)),
-    data: staffMap,
-    sharedMemory: [
-      { time: nowLabel(), tag: "تأسيس المقر", text: "تم اعتماد الهيكل التشغيلي لمكتب MODEL الهندسي والديكور (الإدارة العليا، القسم الهندسي، الاستقطاب والتسويق، الإدارة المساندة، قاعة الاجتماعات، والبوفيه)." }
-    ],
-    ai: { apiKey: "", model: "gemini-2.5-flash" }
-  };
+function openM(id) {
+  if (id === "m-ai") document.getElementById("ai-key").value = geminiKey;
+  document.getElementById(id).style.display = "flex";
+}
+function closeM(id) { document.getElementById(id).style.display = "none"; }
+function saveKey() {
+  geminiKey = document.getElementById("ai-key").value.trim();
+  localStorage.setItem("model_gemini_key", geminiKey);
+  closeM("m-ai");
 }
 
-function saveState() {
-  try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (e) {}
-}
-
-function nowLabel() {
-  return new Date().toLocaleString("ar-EG", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
-}
-
-function showToast(msg) {
-  const t = document.getElementById("toast");
-  t.innerText = msg;
-  t.style.display = "block";
-  clearTimeout(window._toastTimer);
-  window._toastTimer = setTimeout(() => { t.style.display = "none"; }, 2600);
-}
-
-function addSharedMemory(tag, text) {
-  state.sharedMemory.unshift({ time: nowLabel(), tag, text });
-  if (state.sharedMemory.length > 80) state.sharedMemory.pop();
-  saveState();
-  renderSharedMemory();
-}
-
-function getStaff(id) {
-  return state.staff.find(s => s.id === id);
-}
-
-function getStaffData(id) {
-  if (!state.data[id]) {
-    state.data[id] = { chats: [], feedback: [], research: [], hrLogs: [], continuousResearch: false };
-  }
-  return state.data[id];
-}
-
-// ================= عرض قائمة الموظفين =================
-function renderStaffSidebar() {
-  const container = document.getElementById("staff-list");
-  container.innerHTML = "";
-  const depts = ["الإدارة العليا", "القسم الهندسي", "الاستقطاب والتسويق", "الإدارة المساندة"];
-
-  depts.forEach(dept => {
-    const members = state.staff.filter(s => s.dept === dept);
-    const group = document.createElement("div");
-    group.className = "dept-group";
-    group.innerHTML = `<div class="dept-header"><span>${dept}</span><span>${members.length}</span></div>`;
-
-    members.forEach(s => {
-      const card = document.createElement("div");
-      card.className = `staff-card ${s.id === activeStaffId ? "selected" : ""} ${!s.active ? "terminated" : ""}`;
-      const hex = "#" + s.color.toString(16).padStart(6, "0");
-      card.innerHTML = `
-        <div class="staff-main">
-          <span class="avatar-dot" style="background:${s.active ? hex : '#f43f5e'}"></span>
-          <div>
-            <div class="staff-name">${s.name} ${!s.active ? "<span style='color:#fda4af;font-size:10px;'>(منتهية خدمته)</span>" : ""}</div>
-            <div class="staff-meta">${s.role} • درجة ${s.salaryLevel}</div>
-          </div>
-        </div>
-        <span class="rank-badge">${s.rank}</span>
-      `;
-      card.onclick = () => openInspector(s.id, true);
-      group.appendChild(card);
+function renderNav() {
+  const nav = document.getElementById("staff-nav");
+  nav.innerHTML = "";
+  ["الإدارة العليا","القسم الهندسي","الاستقطاب والتسويق","الإدارة المساندة"].forEach(d => {
+    const dh = document.createElement("div");
+    dh.className = "dept";
+    dh.innerText = d;
+    nav.appendChild(dh);
+    STAFF.filter(s => s.dept === d).forEach(s => {
+      const el = document.createElement("div");
+      el.className = `emp ${s.id === curId ? "active" : ""}`;
+      el.innerHTML = `<span>${s.name} ${!s.active ? "(موقوف)" : ""}</span><span style="color:#d4af37;font-size:10.5px;">${s.rank} • م${s.lvl}</span>`;
+      el.onclick = () => selectEmp(s.id, true);
+      nav.appendChild(el);
     });
-
-    container.appendChild(group);
   });
 }
 
-// ================= نافذة إدارة الموظف =================
-function openInspector(id, focusCam = false) {
-  const s = getStaff(id);
+function selectEmp(id, moveCam) {
+  const s = STAFF.find(x => x.id === id);
   if (!s) return;
-  activeStaffId = id;
-  renderStaffSidebar();
-
-  document.getElementById("insp-name").innerText = s.name;
-  document.getElementById("insp-sub").innerText = `${s.role} • ${s.dept} • ${s.rank} (درجة ${s.salaryLevel})`;
-  document.getElementById("insp-persona").innerText = `${s.persona} — رأيه: ${s.stance}`;
-
-  const fireBtn = document.getElementById("fire-btn");
-  fireBtn.innerText = s.active ? "⛔ إنهاء خدمة" : "♻ إعادة تعيين";
-
-  renderProfile(s);
-  renderChat(s);
-  renderFeedback(s);
-  renderResearch(s);
-
-  document.getElementById("inspector").style.display = "flex";
-  if (focusCam) {
-    controls.target.set(s.x, 1.1, s.z);
-    camera.position.set(s.x + 4.8, 5.2, s.z + 6.5);
+  curId = id;
+  renderNav();
+  document.getElementById("d-name").innerText = s.name;
+  document.getElementById("d-role").innerText = `${s.role} • ${s.dept} • ${s.rank} (درجة ${s.lvl})`;
+  document.getElementById("d-persona").innerText = s.persona;
+  renderMsgs(); renderProf(); renderFb();
+  document.getElementById("drawer").style.display = "flex";
+  if (moveCam && camera && controls) {
+    controls.target.set(s.x, 1, s.z);
+    camera.position.set(s.x + 4.5, 5.2, s.z + 6.5);
   }
 }
 
-function closeInspector() {
-  document.getElementById("inspector").style.display = "none";
-  activeStaffId = null;
-  renderStaffSidebar();
-}
-
-function switchSubtab(name) {
-  document.querySelectorAll(".subtab").forEach(el => el.classList.remove("active"));
-  document.querySelectorAll(".subview").forEach(el => el.classList.remove("active"));
-  document.getElementById(`st-${name}`).classList.add("active");
-  document.getElementById(`sv-${name}`).classList.add("active");
-}
-
-function hrAction(type) {
-  if (!activeStaffId) return;
-  const s = getStaff(activeStaffId);
-  const d = getStaffData(activeStaffId);
-
-  if (type === "promote") {
-    s.salaryLevel += 1;
-    if (s.salaryLevel >= 6) s.rank = "شريك / قيادي أول";
-    else if (s.salaryLevel === 5) s.rank = "قيادي";
-    else if (s.salaryLevel === 4) s.rank = "أول";
-    const msg = `تمت ترقية ${s.name} إلى (${s.rank} — درجة ${s.salaryLevel}).`;
-    d.hrLogs.unshift(`${nowLabel()}: ${msg}`);
-    addSharedMemory("ترقية إدارية", msg);
-    showToast(msg);
-  } else if (type === "reward") {
-    const msg = `تم صرف مكافأة تميز لـ ${s.name} تقديراً لأدائه في (${s.role}).`;
-    d.hrLogs.unshift(`${nowLabel()}: ${msg}`);
-    addSharedMemory("مكافأة أداء", msg);
-    showToast(msg);
-  } else if (type === "warn") {
-    s.salaryLevel = Math.max(1, s.salaryLevel - 1);
-    const msg = `تم توجيه تنبيه/مراجعة إدارية لـ ${s.name} (الدرجة الحالية: ${s.salaryLevel}).`;
-    d.hrLogs.unshift(`${nowLabel()}: ${msg}`);
-    addSharedMemory("تنبيه إداري", msg);
-    showToast(msg);
-  } else if (type === "toggleFire") {
-    s.active = !s.active;
-    const msg = s.active
-      ? `تمت إعادة تعيين ${s.name} واستئناف مهامه في (${s.dept}).`
-      : `تم إنهاء خدمة ${s.name} وإيقاف مهامه التشغيلية في (${s.dept}).`;
-    d.hrLogs.unshift(`${nowLabel()}: ${msg}`);
-    addSharedMemory("قرار توظيف", msg);
-    showToast(msg);
-  }
-
-  saveState();
-  openInspector(s.id, false);
-}
-
-function renderProfile(s) {
-  const d = getStaffData(s.id);
-  document.getElementById("prof-style").innerText = `${s.style}\n• الموقف الثابت: ${s.stance}`;
-  document.getElementById("prof-exp").innerText = s.exp;
-
-  const chips = document.getElementById("prof-skills");
-  chips.innerHTML = "";
-  s.skills.forEach(sk => {
-    const el = document.createElement("span");
-    el.className = "chip";
-    el.innerText = sk;
-    chips.appendChild(el);
+function closeDrawer() { curId = null; document.getElementById("drawer").style.display = "none"; renderNav(); }
+function openSub(tab) {
+  ["chat","prof","fb"].forEach(t => {
+    document.getElementById("tb-"+t).classList.toggle("active", t === tab);
+    document.getElementById("sv-"+t).classList.toggle("active", t === tab);
   });
-
-  const hrLog = document.getElementById("prof-hr-log");
-  hrLog.innerHTML = d.hrLogs.map(x => `<div class="log-item">${x}</div>`).join("");
 }
 
-function addSkill() {
-  if (!activeStaffId) return;
-  const input = document.getElementById("new-skill-input");
-  const val = input.value.trim();
-  if (!val) return;
-  const s = getStaff(activeStaffId);
-  if (!s.skills.includes(val)) {
-    s.skills.push(val);
-    s.exp = `${s.exp} كما يمتلك خبرة مضافة في (${val}).`;
-    addSharedMemory("إضافة خبرة", `أضاف حازم خبرة (${val}) إلى ملف ${s.name}.`);
-    saveState();
-    renderProfile(s);
-  }
-  input.value = "";
-  showToast("تمت إضافة الخبرة بنجاح");
-}
-
-// ================= الذكاء الاصطناعي والذاكرة والترابط بين الشخصيات =================
-function buildPeerContext(staff) {
-  const peers = state.staff.filter(p => p.id !== staff.id && p.active).slice(0, 5);
-  const peerNotes = peers.map(p => `${p.name} (${p.role}): ${p.stance}`).join(" | ");
-  const memNotes = state.sharedMemory.slice(0, 5).map(m => `[${m.tag}] ${m.text}`).join(" | ");
-  const fbNotes = getStaffData(staff.id).feedback.slice(0, 3).map(f => f.text).join(" | ");
-  return { peerNotes, memNotes, fbNotes };
-}
-
-async function generateAgentResponse(staff, promptText, contextLabel = "حوار مباشر") {
-  const d = getStaffData(staff.id);
-  if (!staff.active) {
-    return `هذا الحساب موقوف حالياً لأن خدمة ${staff.name} منتهية في المكتب. يمكنك إعادة التعيين من زر "إعادة تعيين".`;
-  }
-
-  const { peerNotes, memNotes, fbNotes } = buildPeerContext(staff);
-
-  if (state.ai.apiKey && state.ai.apiKey.trim().length > 10) {
+async function askAgent(s, userMsg) {
+  if (!s.active) return "الحساب موقوف حالياً لإنهاء الخدمة.";
+  const fbText = mem[s.id].fb.join(" | ");
+  if (geminiKey) {
     try {
-      const systemInstruction = `أنت ${staff.name}، تشغل منصب ${staff.role} ضمن قسم ${staff.dept} في مكتب ديكور وهندسة باسم MODEL.
-شخصيتك: ${staff.persona}
-أسلوبك: ${staff.style}
-خبراتك ومهاراتك: ${staff.exp} — (${staff.skills.join("، ")})
-رأيك وموقفك: ${staff.stance}
-تغذية راجعة من المدير حازم: ${fbNotes || "لا توجد ملاحظات خاصة بعد."}
-آراء زملائك في المكتب: ${peerNotes}
-الذاكرة المشتركة للمكتب: ${memNotes}
-أجب باللغة العربية بأسلوب مهني واقعي وحاسم، وعبّر عن رأيك المستقل وتفاعلك مع رأي زملائك عند الحاجة، دون مقدمات إنشائية.`;
-
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(state.ai.model || "gemini-2.5-flash")}:generateContent?key=${encodeURIComponent(state.ai.apiKey.trim())}`;
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: `${systemInstruction}\n\nالسياق (${contextLabel}):\n${promptText}` }] }]
-        })
+      const prompt = `أنت ${s.name} (${s.role} في ${s.dept}) بمكتب MODEL للديكور والهندسة. شخصيتك: ${s.persona}. خبراتك: ${s.exp} (${s.skills.join("، ")}). ملاحظات المدير لك: ${fbText || "لا يوجد"}. سجل المكتب: ${sharedLog.slice(0,4).join(" | ")}. أجب برأيك المهني المباشر على: ${userMsg}`;
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(geminiKey)}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
       });
-      const json = await res.json();
-      const reply = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (reply) return reply.trim();
-    } catch (err) {
-      console.warn("AI fallback:", err);
-    }
+      const j = await r.json();
+      const out = j?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (out) return out.trim();
+    } catch (e) {}
   }
-
-  // محرك ذكي محلي متفاعل مع الشخصية والزملاء والذاكرة
-  const peerSample = state.staff.find(p => p.id !== staff.id && p.active);
-  const fbPart = fbNotes ? `\n• أخذت في الاعتبار توجيهك الأخير: "${getStaffData(staff.id).feedback[0].text}".` : "";
-  const peerPart = peerSample
-    ? `\n• بالربط مع وجهة نظر ${peerSample.name} (${peerSample.role}) حول (${peerSample.stance.slice(0, 55)}...)، أرى أن التنسيق بين دورنا ودوره سيحسم هذه النقطة.`
-    : "";
-  const memPart = state.sharedMemory[0] ? `\n• متوافق مع آخر سجل في ذاكرة المكتب (${state.sharedMemory[0].tag}).` : "";
-
-  return `بصفتي ${staff.name} (${staff.role}) في ${staff.dept}، رأيي المباشر حول "${promptText}":\n• ${staff.stance}\n• سأتعامل مع هذا الملف عبر (${staff.skills.slice(0, 2).join(" و ")}) وفق منهجيتي: ${staff.style}${fbPart}${peerPart}${memPart}`;
+  const fbNote = fbText ? `\n• مع مراعاة ملاحظتك: "${mem[s.id].fb[0]}"` : "";
+  return `بصفتي ${s.name} (${s.role})، رأيي حول "${userMsg}":\n• ${s.persona}\n• سأتعامل مع الملف عبر (${s.skills.join(" و ")}).${fbNote}`;
 }
 
-function renderChat(s) {
-  const d = getStaffData(s.id);
-  const box = document.getElementById("chat-box");
-  box.innerHTML = d.chats.map(m => `
-    <div class="bubble ${m.who === "user" ? "user" : "agent"}">
-      <div class="bubble-who">${m.who === "user" ? "حازم (المدير)" : `${s.name} • ${s.role}`}</div>
-      <div>${m.text}</div>
-    </div>
-  `).join("");
+function renderMsgs() {
+  const s = STAFF.find(x => x.id === curId);
+  const box = document.getElementById("msgs");
+  box.innerHTML = mem[curId].chats.map(m => `<div class="msg ${m.who}"><strong>${m.who==="u"?"حازم":s.name}:</strong>\n${m.text}</div>`).join("");
   box.scrollTop = box.scrollHeight;
 }
 
-async function sendStaffChat() {
-  if (!activeStaffId) return;
-  const input = document.getElementById("chat-input");
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = "";
-
-  const s = getStaff(activeStaffId);
-  const d = getStaffData(activeStaffId);
-  d.chats.push({ who: "user", text });
-  d.chats.push({ who: "agent", text: "⏳ جاري تحليل الموقف وصياغة الرأي..." });
-  renderChat(s);
-
-  const reply = await generateAgentResponse(s, text, "محادثة وأوامر مباشرة");
-  d.chats.pop();
-  d.chats.push({ who: "agent", text: reply });
-  addSharedMemory(`حوار مع ${s.name}`, `طرح حازم: "${text.slice(0, 70)}" ورد ${s.name} برأيه وتوصيته.`);
-  saveState();
-  renderChat(s);
+async function sendChat() {
+  if (!curId) return;
+  const inp = document.getElementById("chat-inp");
+  const txt = inp.value.trim();
+  if (!txt) return;
+  inp.value = "";
+  const s = STAFF.find(x => x.id === curId);
+  mem[curId].chats.push({ who:"u", text: txt });
+  renderMsgs();
+  const rep = await askAgent(s, txt);
+  mem[curId].chats.push({ who:"a", text: rep });
+  sharedLog.unshift(`حوار ${s.name}: ${txt.slice(0,50)}`);
+  renderMsgs();
 }
 
-// ================= التغذية الراجعة والبحث المستمر =================
-function submitFeedback() {
-  if (!activeStaffId) return;
-  const ta = document.getElementById("fb-textarea");
-  const text = ta.value.trim();
-  if (!text) return;
-
-  const s = getStaff(activeStaffId);
-  const d = getStaffData(activeStaffId);
-  d.feedback.unshift({ time: nowLabel(), text });
-  addSharedMemory(`تغذية راجعة لـ ${s.name}`, text);
-  saveState();
-  ta.value = "";
-  renderFeedback(s);
-  showToast("تم حفظ التغذية الراجعة في سجل الموظف والذاكرة المشتركة");
+function renderProf() {
+  const s = STAFF.find(x => x.id === curId);
+  document.getElementById("prof-box").innerHTML = `<strong>الخبرات:</strong> ${s.exp}<br><br><strong>المهارات:</strong> ${s.skills.join(" • ")}`;
+}
+function addSkill() {
+  const inp = document.getElementById("skill-inp");
+  const v = inp.value.trim();
+  if (!v || !curId) return;
+  STAFF.find(x => x.id === curId).skills.push(v);
+  inp.value = ""; renderProf();
+}
+function addFeedback() {
+  const ta = document.getElementById("fb-ta");
+  const v = ta.value.trim();
+  if (!v || !curId) return;
+  mem[curId].fb.unshift(v);
+  ta.value = ""; renderFb();
+}
+function renderFb() {
+  document.getElementById("fb-list").innerHTML = mem[curId].fb.map(x => `<div class="box">${x}</div>`).join("");
+}
+function doHr(type) {
+  if (!curId) return;
+  const s = STAFF.find(x => x.id === curId);
+  if (type === "promote") { s.lvl += 1; s.rank = s.lvl >= 5 ? "قيادي" : "أول"; sharedLog.unshift(`ترقية ${s.name} إلى درجة ${s.lvl}`); }
+  if (type === "reward") { mem[curId].chats.push({ who:"a", text:"شكراً أستاذ حازم على المكافأة والتحفيز." }); sharedLog.unshift(`مكافأة لـ ${s.name}`); }
+  if (type === "fire") { s.active = !s.active; sharedLog.unshift(`${s.active?"إعادة":"إنهاء"} خدمة ${s.name}`); }
+  renderNav(); selectEmp(s.id, false);
 }
 
-function renderFeedback(s) {
-  const d = getStaffData(s.id);
-  const hist = document.getElementById("fb-history");
-  if (!d.feedback.length) {
-    hist.innerHTML = `<div class="card" style="color:var(--muted);">لم تُسجّل تغذية راجعة لهذا الموظف بعد.</div>`;
-    return;
+async function runBroadcast() {
+  const t = document.getElementById("cast-target").value;
+  const txt = document.getElementById("cast-txt").value.trim();
+  if (!txt) return;
+  const list = STAFF.filter(s => s.active && (t === "ALL" || s.dept === t));
+  const out = document.getElementById("cast-out");
+  out.innerHTML = `<div class="box">جاري جمع ردود (${list.length}) موظفين...</div>`;
+  sharedLog.unshift(`أمر (${t}): ${txt}`);
+  const htmls = [];
+  for (const s of list) {
+    const r = await askAgent(s, txt);
+    htmls.push(`<div class="box"><strong>${s.name} (${s.role}):</strong><br>${r}</div>`);
   }
-  hist.innerHTML = d.feedback.map(f => `
-    <div class="log-item">
-      <div>${f.text}</div>
-      <div class="log-meta">${f.time}</div>
-    </div>
-  `).join("");
+  out.innerHTML = htmls.join("");
 }
 
-function updateResearchButton(s) {
-  const btn = document.getElementById("research-toggle-btn");
-  const d = getStaffData(s.id);
-  btn.innerText = d.continuousResearch ? "⏸ إيقاف البحث المستمر" : "▶ تشغيل البحث المستمر";
-}
-
-function toggleContinuousResearch() {
-  if (!activeStaffId) return;
-  const s = getStaff(activeStaffId);
-  const d = getStaffData(activeStaffId);
-  d.continuousResearch = !d.continuousResearch;
-  updateResearchButton(s);
-
-  if (d.continuousResearch) {
-    runResearchCycleForActive();
-    researchTimers[s.id] = setInterval(() => {
-      if (getStaffData(s.id).continuousResearch) {
-        runResearchCycleForStaff(s.id, false);
-      }
-    }, 25000);
-    showToast(`تم تفعيل البحث المستمر لـ ${s.name}`);
-  } else {
-    clearInterval(researchTimers[s.id]);
-    showToast(`تم إيقاف البحث المستمر لـ ${s.name}`);
+async function runMeeting() {
+  const topic = document.getElementById("meet-topic").value.trim() || "مراجعة مشاريع المكتب";
+  const out = document.getElementById("meet-out");
+  out.innerHTML = `<div class="box">انعقاد الاجتماع حول: ${topic}...</div>`;
+  sharedLog.unshift(`اجتماع: ${topic}`);
+  const leaders = STAFF.filter(s => s.active).slice(0, 6);
+  const htmls = [];
+  for (const s of leaders) {
+    const r = await askAgent(s, `في اجتماع المكتب حول: ${topic}، ما رأيك وتوصيتك؟`);
+    htmls.push(`<div class="box"><strong>${s.name} (${s.role}):</strong><br>${r}</div>`);
   }
-  saveState();
+  out.innerHTML = htmls.join("");
 }
 
-async function runResearchCycleForActive() {
-  if (!activeStaffId) return;
-  await runResearchCycleForStaff(activeStaffId, true);
-}
-
-async function runResearchCycleForStaff(staffId, notify) {
-  const s = getStaff(staffId);
-  if (!s || !s.active) return;
-  const d = getStaffData(staffId);
-  const focusSkill = s.skills[d.research.length % s.skills.length] || s.role;
-  const finding = await generateAgentResponse(
-    s,
-    `أجرِ بحثاً وتدقيقاً مستمراً في مجال (${focusSkill}) لرفع جودة عمل مكتب الديكور والهندسة وقدّم خلاصة عملية قصيرة.`,
-    "بحث مستمر"
-  );
-  d.research.unshift({ time: nowLabel(), topic: focusSkill, text: finding });
-  if (d.research.length > 25) d.research.pop();
-  addSharedMemory(`بحث مستمر — ${s.name}`, `[${focusSkill}] ${finding.slice(0, 110)}...`);
-  saveState();
-  if (activeStaffId === staffId) renderResearch(s);
-  if (notify) showToast(`أنجز ${s.name} دورة بحث جديدة في (${focusSkill})`);
-}
-
-function renderResearch(s) {
-  updateResearchButton(s);
-  const d = getStaffData(s.id);
-  const feed = document.getElementById("research-feed");
-  if (!d.research.length) {
-    feed.innerHTML = `<div class="card" style="color:var(--muted);">لا توجد نتائج بحثية بعد. شغّل البحث المستمر أو نفّذ دورة بحث الآن.</div>`;
-    return;
-  }
-  feed.innerHTML = d.research.map(r => `
-    <div class="log-item">
-      <div style="font-weight:700; color:var(--gold); margin-bottom:3px;">محور البحث: ${r.topic}</div>
-      <div style="white-space:pre-wrap;">${r.text}</div>
-      <div class="log-meta">${r.time}</div>
-    </div>
-  `).join("");
-}
-
-// ================= أوامر الأقسام والجميع + الاجتماعات =================
-async function executeBroadcast() {
-  const target = document.getElementById("broadcast-target").value;
-  const text = document.getElementById("broadcast-text").value.trim();
-  if (!text) return;
-
-  const recipients = state.staff.filter(s => s.active && (target === "ALL" || s.dept === target));
-  const resBox = document.getElementById("broadcast-results");
-  resBox.innerHTML = `<div class="card">⏳ جاري توجيه الأمر إلى (${recipients.length}) من الكادر وجمع آرائهم...</div>`;
-
-  addSharedMemory(`أمر موجه (${target === "ALL" ? "الجميع" : target})`, text);
-
-  const cards = [];
-  for (const s of recipients) {
-    const reply = await generateAgentResponse(s, `أمر إداري عام من حازم: ${text}`, "أمر قسم/الجميع");
-    getStaffData(s.id).chats.push({ who: "user", text: `[أمر موجه لـ ${target === "ALL" ? "الجميع" : target}]: ${text}` });
-    getStaffData(s.id).chats.push({ who: "agent", text: reply });
-    cards.push(`<div class="log-item"><div style="font-weight:700;color:var(--gold);margin-bottom:4px;">${s.name} — ${s.role}</div><div style="white-space:pre-wrap;">${reply}</div></div>`);
-  }
-
-  saveState();
-  resBox.innerHTML = cards.join("");
-}
-
-async function runMeetingSession() {
-  const topic = document.getElementById("meeting-topic").value.trim() || "مراجعة خطط المشاريع وتكامل الأقسام";
-  const group = document.getElementById("meeting-group").value;
-  const members = state.staff.filter(s => s.active && (group === "ALL" || s.dept === group));
-  const out = document.getElementById("meeting-output");
-  out.innerHTML = `<div class="card">⏳ انعقد الاجتماع في قاعة الاجتماعات حول: <strong>${topic}</strong>...</div>`;
-
-  const lines = [];
-  for (const s of members) {
-    const opinion = await generateAgentResponse(s, `في اجتماع قاعة الاجتماعات حول موضوع: "${topic}"، ما رأيك الفني/الإداري وكيف تتكامل مع بقية الزملاء؟`, `اجتماع: ${topic}`);
-    lines.push(`<div class="log-item"><div style="font-weight:700;color:var(--gold);margin-bottom:3px;">${s.name} (${s.role})</div><div style="white-space:pre-wrap;">${opinion}</div></div>`);
-  }
-
-  addSharedMemory(`محضر اجتماع (${group})`, `الموضوع: "${topic}" بمشاركة ${members.length} أعضاء وتبادل الآراء والتوصيات.`);
-  saveState();
-  out.innerHTML = `<div class="card"><h4>📋 محضر الاجتماع — ${topic}</h4><div>عدد المشاركين: ${members.length} • تم حفظ المحضر في الذاكرة المشتركة.</div></div>` + lines.join("");
-}
-
-function renderSharedMemory() {
-  const el = document.getElementById("shared-memory-list");
-  if (!el) return;
-  el.innerHTML = state.sharedMemory.map(m => `
-    <div class="log-item">
-      <div style="font-weight:700;color:var(--gold);">${m.tag} <span style="font-weight:400;color:var(--muted);font-size:10.5px;">• ${m.time}</span></div>
-      <div style="margin-top:3px;">${m.text}</div>
-    </div>
-  `).join("");
-}
-
-function openModal(id) {
-  if (id === "memory-modal") renderSharedMemory();
-  if (id === "ai-modal") {
-    document.getElementById("gemini-key-input").value = state.ai.apiKey || "";
-    document.getElementById("gemini-model-input").value = state.ai.model || "gemini-2.5-flash";
-  }
-  document.getElementById(id).style.display = "flex";
-}
-
-function closeModal(id) {
-  document.getElementById(id).style.display = "none";
-}
-
-function saveAiConfig() {
-  state.ai.apiKey = document.getElementById("gemini-key-input").value.trim();
-  state.ai.model = document.getElementById("gemini-model-input").value.trim() || "gemini-2.5-flash";
-  saveState();
-  closeModal("ai-modal");
-  showToast("تم حفظ إعدادات الذكاء الاصطناعي");
-}
-
-// ================= مشهد Three.js لمكتب الديكور والهندسة =================
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x090d16);
-scene.fog = new THREE.FogExp2(0x090d16, 0.011);
-
-const camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.1, 220);
-camera.position.set(0, 22, 26);
-
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-document.getElementById("scene-host").appendChild(renderer.domElement);
-
-const controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.06;
-controls.maxPolarAngle = Math.PI / 2.08;
-controls.minDistance = 4;
-controls.maxDistance = 55;
-
-// إضاءة معمارية متوازنة
-scene.add(new THREE.AmbientLight(0xe2e8f0, 0.52));
-const sunLight = new THREE.DirectionalLight(0xfff7ed, 1.05);
-sunLight.position.set(16, 28, 18);
-sunLight.castShadow = true;
-sunLight.shadow.mapSize.set(2048, 2048);
-scene.add(sunLight);
-
-const warmFill = new THREE.PointLight(0xf59e0b, 0.9, 22);
-warmFill.position.set(11.5, 3.2, 10.5);
-scene.add(warmFill);
-
-const studioAccent = new THREE.PointLight(0x38bdf8, 0.85, 25);
-studioAccent.position.set(-8.5, 3.8, -2);
-scene.add(studioAccent);
-
-// خامات أرضيات وجدران باركيه وزجاج
-function createWoodFloorTexture() {
-  const c = document.createElement("canvas");
-  c.width = 512; c.height = 512;
-  const ctx = c.getContext("2d");
-  ctx.fillStyle = "#2b1e16";
-  ctx.fillRect(0, 0, 512, 512);
-  const planks = 16;
-  const h = 512 / planks;
-  for (let i = 0; i < planks; i++) {
-    const shade = 38 + ((i * 7) % 14);
-    ctx.fillStyle = `rgb(${shade + 22}, ${shade + 9}, ${shade - 4})`;
-    ctx.fillRect(0, i * h + 1, 512, h - 2);
-    ctx.fillStyle = "rgba(10,7,5,0.45)";
-    ctx.fillRect(0, i * h, 512, 1.5);
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(7, 6);
-  return tex;
-}
-
-const floorMat = new THREE.MeshStandardMaterial({
-  map: createWoodFloorTexture(),
-  roughness: 0.45,
-  metalness: 0.08
-});
-const floorMesh = new THREE.Mesh(new THREE.BoxGeometry(36, 0.4, 28), floorMat);
-floorMesh.position.y = -0.2;
-floorMesh.receiveShadow = true;
-scene.add(floorMesh);
-
-// جدران محيطية وفواصل زجاجية للمناطق
-const wallMat = new THREE.MeshStandardMaterial({ color: 0x182232, roughness: 0.7 });
-const glassMat = new THREE.MeshStandardMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.16, roughness: 0.1, metalness: 0.2 });
-const frameMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.6, roughness: 0.35 });
-
-function addPartitionWall(x, z, w, d, h = 2.4, glass = true) {
-  const base = new THREE.Mesh(new THREE.BoxGeometry(w, 0.55, d), wallMat);
-  base.position.set(x, 0.275, z);
-  base.castShadow = true;
-  base.receiveShadow = true;
-  scene.add(base);
-
-  if (glass) {
-    const pane = new THREE.Mesh(new THREE.BoxGeometry(w, h - 0.55, Math.max(0.06, d * 0.4)), glassMat);
-    pane.position.set(x, 0.55 + (h - 0.55) / 2, z);
-    scene.add(pane);
-
-    const topRail = new THREE.Mesh(new THREE.BoxGeometry(w, 0.1, Math.max(0.12, d)), frameMat);
-    topRail.position.set(x, h, z);
-    scene.add(topRail);
-  }
-}
-
-// فواصل واضحة بين الأقسام وقاعة الاجتماعات والبوفيه والاستقبال
-addPartitionWall(0.5, -4.8, 0.18, 8.5, 2.3, true);
-addPartitionWall(0.5, 4.8, 0.18, 7.5, 2.3, true);
-addPartitionWall(-6.5, 7.6, 14.5, 0.18, 2.3, true);
-addPartitionWall(6.8, 7.6, 10.5, 0.18, 2.3, true);
-
-function createZoneSign(x, z, title, accentHex) {
-  const c = document.createElement("canvas");
-  c.width = 420; c.height = 84;
-  const ctx = c.getContext("2d");
-  ctx.fillStyle = "rgba(10, 15, 25, 0.92)";
-  ctx.fillRect(0, 0, 420, 84);
-  ctx.fillStyle = "#" + accentHex.toString(16).padStart(6, "0");
-  ctx.fillRect(0, 0, 8, 84);
-  ctx.strokeStyle = "rgba(212, 175, 55, 0.45)";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(1, 1, 418, 82);
-  ctx.fillStyle = "#f8fafc";
-  ctx.font = "bold 26px Tahoma";
-  ctx.textAlign = "center";
-  ctx.fillText(title, 215, 51);
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c) }));
-  sp.scale.set(5.2, 1.05, 1);
-  sp.position.set(x, 2.85, z);
-  scene.add(sp);
-}
-
-createZoneSign(-6.5, -11.6, "الإدارة العليا", 0xd4af37);
-createZoneSign(-7.5, -4.5, "القسم الهندسي والتصميم", 0x10b981);
-createZoneSign(8, -11.6, "الاستقطاب والتسويق", 0xf59e0b);
-createZoneSign(8, 0.2, "الإدارة المساندة والمالية", 0xc084fc);
-createZoneSign(0, 12.6, "الاستقبال (RECEPTION)", 0x38bdf8);
-createZoneSign(-11.5, 12.6, "قاعة الاجتماعات", 0xd4af37);
-createZoneSign(11.5, 12.6, "البوفيه والاستراحة", 0xfb7185);
-
-// تفاصيل قاعة الاجتماعات (طاولة خشب داكن + كراسي + شاشة عرض)
-const confTable = new THREE.Mesh(
-  new THREE.BoxGeometry(6.2, 0.14, 2.0),
-  new THREE.MeshStandardMaterial({ color: 0x3b2618, roughness: 0.35, metalness: 0.12 })
-);
-confTable.position.set(-11.5, 0.82, 10.5);
-confTable.castShadow = true;
-scene.add(confTable);
-
-const confScreen = new THREE.Mesh(
-  new THREE.BoxGeometry(3.6, 1.5, 0.1),
-  new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0x1e293b, emissiveIntensity: 0.6 })
-);
-confScreen.position.set(-11.5, 1.85, 8.35);
-scene.add(confScreen);
-
-[-13.6, -11.5, -9.4].forEach(cx => {
-  [-1.35, 1.35].forEach(dz => {
-    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.12, 0.62), new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 }));
-    seat.position.set(cx, 0.46, 10.5 + dz);
-    const back = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.55, 0.12), new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 }));
-    back.position.set(cx, 0.76, 10.5 + dz + (dz > 0 ? 0.26 : -0.26));
-    scene.add(seat, back);
-  });
-});
-
-// تفاصيل البوفيه (كونتر رخام/خشب + ماكينة قهوة + طاولة صغيرة + نبتة)
-const pantryBar = new THREE.Mesh(
-  new THREE.BoxGeometry(4.6, 1.05, 1.15),
-  new THREE.MeshStandardMaterial({ color: 0x291d16, roughness: 0.4 })
-);
-pantryBar.position.set(11.5, 0.525, 9.2);
-pantryBar.castShadow = true;
-scene.add(pantryBar);
-
-const espresso = new THREE.Mesh(
-  new THREE.BoxGeometry(0.6, 0.5, 0.55),
-  new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.7, roughness: 0.25 })
-);
-espresso.position.set(10.2, 1.3, 9.2);
-scene.add(espresso);
-
-// تفاصيل الاستقبال (مكتب استقبال حديث + نباتات زينة)
-const recDesk = new THREE.Mesh(
-  new THREE.BoxGeometry(4.8, 1.08, 1.25),
-  new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35, metalness: 0.2 })
-);
-recDesk.position.set(0, 0.54, 10.2);
-recDesk.castShadow = true;
-scene.add(recDesk);
-
-function addPlanter(x, z) {
-  const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.28, 0.55, 16), new THREE.MeshStandardMaterial({ color: 0x334155 }));
-  pot.position.set(x, 0.275, z);
-  const foliage = new THREE.Mesh(new THREE.DodecahedronGeometry(0.58, 1), new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.8 }));
-  foliage.position.set(x, 0.85, z);
-  scene.add(pot, foliage);
-}
-addPlanter(-2.8, 10.2);
-addPlanter(2.8, 10.2);
-addPlanter(-15.5, -11.5);
-addPlanter(15.5, -11.5);
-
-// بناء مكاتب ومجسمات الموظفين بتفاصيل معمارية أنيقة
-function buildNamePlate(text) {
-  const c = document.createElement("canvas");
-  c.width = 256; c.height = 68;
-  const ctx = c.getContext("2d");
-  ctx.fillStyle = "rgba(10, 15, 25, 0.92)";
-  ctx.fillRect(0, 0, 256, 68);
-  ctx.strokeStyle = "#d4af37";
-  ctx.lineWidth = 2.5;
-  ctx.strokeRect(2, 2, 252, 64);
-  ctx.fillStyle = "#f8fafc";
-  ctx.font = "bold 25px Tahoma";
-  ctx.textAlign = "center";
-  ctx.fillText(text, 128, 43);
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c) }));
-  sp.scale.set(2.7, 0.72, 1);
-  return sp;
-}
-
-const pickables = [];
-const avatarMeshes = {};
-
-state.staff.forEach(s => {
-  const grp = new THREE.Group();
-  grp.position.set(s.x, 0, s.z);
-
-  // مكتب خشبي بقاعدتين
-  const top = new THREE.Mesh(
-    new THREE.BoxGeometry(2.2, 0.1, 1.05),
-    new THREE.MeshStandardMaterial({ color: 0x4a3222, roughness: 0.42 })
-  );
-  top.position.y = 0.76;
-  top.castShadow = true;
-  grp.add(top);
-
-  [-0.85, 0.85].forEach(lx => {
-    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.72, 0.92), frameMat);
-    leg.position.set(lx, 0.36, 0);
-    grp.add(leg);
-  });
-
-  // شاشة عرض مكتب
-  const monitor = new THREE.Mesh(
-    new THREE.BoxGeometry(0.78, 0.44, 0.05),
-    new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: s.color, emissiveIntensity: 0.25 })
-  );
-  monitor.position.set(0, 1.04, 0.14);
-  grp.add(monitor);
-
-  // كرسي ومجسم الموظف
-  const chair = new THREE.Mesh(
-    new THREE.BoxGeometry(0.58, 0.65, 0.58),
-    new THREE.MeshStandardMaterial({ color: 0x1e293b })
-  );
-  chair.position.set(0, 0.35, -0.58);
-  grp.add(chair);
-
-  const bodyMat = new THREE.MeshStandardMaterial({ color: s.color, roughness: 0.55 });
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.3, 0.82, 18), bodyMat);
-  body.position.set(0, 0.72, -0.58);
-  body.castShadow = true;
-  body.userData.staffId = s.id;
-  grp.add(body);
-  pickables.push(body);
-
-  const head = new THREE.Mesh(
-    new THREE.SphereGeometry(0.22, 18, 18),
-    new THREE.MeshStandardMaterial({ color: 0xf1c27d, roughness: 0.65 })
-  );
-  head.position.set(0, 1.32, -0.58);
-  head.userData.staffId = s.id;
-  grp.add(head);
-  pickables.push(head);
-
-  const plate = buildNamePlate(s.name);
-  plate.position.set(0, 2.15, -0.58);
-  grp.add(plate);
-
-  avatarMeshes[s.id] = { bodyMat, body, head };
-  scene.add(grp);
-});
-
-const raycaster = new THREE.Raycaster();
-const ndc = new THREE.Vector2();
-renderer.domElement.addEventListener("click", e => {
-  const rect = renderer.domElement.getBoundingClientRect();
-  ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-  ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-  raycaster.setFromCamera(ndc, camera);
-  const hits = raycaster.intersectObjects(pickables);
-  if (hits.length > 0) {
-    openInspector(hits[0].object.userData.staffId, false);
-  }
-});
-
-function setCameraView(view) {
-  document.querySelectorAll(".top-actions .btn").forEach(b => b.classList.remove("active"));
-  const presets = {
-    overview: { pos: [0, 22, 26], target: [0, 0, 0], btn: "view-overview" },
-    top: { pos: [0, 36, 0.1], target: [0, 0, 0], btn: "view-top" },
-    reception: { pos: [0, 6.5, 17.5], target: [0, 0.7, 10.2], btn: null },
-    meeting: { pos: [-11.5, 6.5, 17.5], target: [-11.5, 0.8, 10.5], btn: "view-meeting" },
-    pantry: { pos: [11.5, 6.5, 17.5], target: [11.5, 0.8, 9.8], btn: "view-pantry" },
-    exec: { pos: [-6.5, 7.5, -1.5], target: [-6.5, 0.8, -8.5], btn: null },
-    eng: { pos: [-7.5, 11.5, 8.5], target: [-7.5, 0.8, 1], btn: null },
-    mkt: { pos: [8, 9.5, 0.5], target: [8, 0.8, -7], btn: null },
-    admin: { pos: [8, 9.5, 11.5], target: [8, 0.8, 4], btn: null }
+function camPreset(p) {
+  if (!camera || !controls) return;
+  const map = {
+    overview: [[0, 22, 26], [0, 0, 0]],
+    top: [[0, 36, 0.1], [0, 0, 0]],
+    reception: [[0, 6, 17], [0, 0.7, 10]],
+    meeting: [[-11.5, 6, 17], [-11.5, 0.8, 10.5]],
+    pantry: [[11.5, 6, 17], [11.5, 0.8, 9.8]],
+    exec: [[-6.5, 7.5, -1.5], [-6.5, 0.8, -8.5]],
+    eng: [[-7.5, 11.5, 8.5], [-7.5, 0.8, 1]],
+    mkt: [[8, 9.5, 0.5], [8, 0.8, -7]],
+    admin: [[8, 9.5, 11.5], [8, 0.8, 4]]
   };
-  const p = presets[view] || presets.overview;
-  camera.position.set(...p.pos);
-  controls.target.set(...p.target);
-  if (p.btn && document.getElementById(p.btn)) {
-    document.getElementById(p.btn).classList.add("active");
-  }
+  const v = map[p] || map.overview;
+  camera.position.set(...v[0]);
+  controls.target.set(...v[1]);
 }
 
-window.addEventListener("resize", () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
+function init3D() {
+  if (typeof THREE === "undefined") throw new Error("مكتبة Three.js لم تُحمّل.");
+  let host = document.getElementById("scene-host");
+  if (!host) {
+    host = document.createElement("div");
+    host.id = "scene-host";
+    document.body.prepend(host);
+  }
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x090d16);
+
+  camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.1, 200);
+  camera.position.set(0, 22, 26);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
-});
+  renderer.shadowMap.enabled = true;
+  host.appendChild(renderer.domElement);
 
-renderStaffSidebar();
-renderSharedMemory();
+  if (typeof THREE.OrbitControls !== "undefined") {
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.maxPolarAngle = Math.PI / 2.08;
+  }
 
-(function loop() {
-  requestAnimationFrame(loop);
-  state.staff.forEach(s => {
-    const m = avatarMeshes[s.id];
-    if (m) m.bodyMat.color.setHex(s.active ? s.color : 0x475569);
+  scene.add(new THREE.AmbientLight(0xe2e8f0, 0.75));
+  const dir = new THREE.DirectionalLight(0xfff7ed, 1.0);
+  dir.position.set(16, 28, 18);
+  dir.castShadow = true;
+  scene.add(dir);
+
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(36, 0.4, 28), new THREE.MeshStandardMaterial({ color: 0x3b2618, roughness: 0.45 }));
+  floor.position.y = -0.2;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  const grid = new THREE.GridHelper(36, 18, 0xd4af37, 0x1e293b);
+  grid.position.y = 0.01;
+  scene.add(grid);
+
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.18 });
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
+  function addWall(x, z, w, d) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, 2.2, d), glassMat);
+    m.position.set(x, 1.1, z);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(w, 0.12, d), frameMat);
+    top.position.set(x, 2.2, z);
+    scene.add(m, top);
+  }
+  addWall(0.5, -4.8, 0.16, 8.5);
+  addWall(0.5, 4.8, 0.16, 7.5);
+  addWall(-6.5, 7.6, 14.5, 0.16);
+  addWall(6.8, 7.6, 10.5, 0.16);
+
+  const conf = new THREE.Mesh(new THREE.BoxGeometry(6.0, 0.14, 1.9), new THREE.MeshStandardMaterial({ color: 0x4a2e1b }));
+  conf.position.set(-11.5, 0.82, 10.5);
+  scene.add(conf);
+
+  const pantry = new THREE.Mesh(new THREE.BoxGeometry(4.4, 1.0, 1.1), new THREE.MeshStandardMaterial({ color: 0x2c1d14 }));
+  pantry.position.set(11.5, 0.5, 9.2);
+  scene.add(pantry);
+
+  const rec = new THREE.Mesh(new THREE.BoxGeometry(4.6, 1.05, 1.2), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+  rec.position.set(0, 0.525, 10.2);
+  scene.add(rec);
+
+  const picks = [];
+  STAFF.forEach(s => {
+    const grp = new THREE.Group();
+    grp.position.set(s.x, 0, s.z);
+
+    const desk = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.1, 1.0), new THREE.MeshStandardMaterial({ color: 0x5c3a21 }));
+    desk.position.y = 0.76;
+    grp.add(desk);
+
+    const scr = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.42, 0.05), new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: s.col, emissiveIntensity: 0.35 }));
+    scr.position.set(0, 1.02, 0.12);
+    grp.add(scr);
+
+    const mat = new THREE.MeshStandardMaterial({ color: s.col });
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.3, 0.82, 16), mat);
+    body.position.set(0, 0.72, -0.55);
+    body.userData.id = s.id;
+    grp.add(body);
+    picks.push(body);
+
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 16), new THREE.MeshStandardMaterial({ color: 0xf1c27d }));
+    head.position.set(0, 1.32, -0.55);
+    head.userData.id = s.id;
+    grp.add(head);
+    picks.push(head);
+
+    avatarBodies[s.id] = { mat, col: s.col };
+    scene.add(grp);
   });
-  controls.update();
-  renderer.render(scene, camera);
-})();
+
+  const ray = new THREE.Raycaster();
+  const ptr = new THREE.Vector2();
+  renderer.domElement.addEventListener("click", e => {
+    const r = renderer.domElement.getBoundingClientRect();
+    ptr.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+    ptr.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+    ray.setFromCamera(ptr, camera);
+    const hit = ray.intersectObjects(picks);
+    if (hit.length) selectEmp(hit[0].object.userData.id, false);
+  });
+
+  window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  (function animate() {
+    requestAnimationFrame(animate);
+    STAFF.forEach(s => {
+      if (avatarBodies[s.id]) avatarBodies[s.id].mat.color.setHex(s.active ? s.col : 0x475569);
+    });
+    if (controls) controls.update();
+    renderer.render(scene, camera);
+  })();
+}
+
+window.addEventListener("load", () => {
+  renderNav();
+  try {
+    init3D();
+  } catch (e) {
+    const b = document.getElementById("err-banner");
+    b.style.display = "block";
+    b.innerText = "خطأ في تشغيل المشهد: " + e.message;
+  }
+});
 </script>
 </body>
 </html>
