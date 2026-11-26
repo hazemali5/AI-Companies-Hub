@@ -1892,5 +1892,149 @@ window.askAgent = async function(s, userMsg) {
 })();
 </script>
 
+
+<script>
+(function finalCleanChatAndPromptFix() {
+  function extractCleanUserMessage(input) {
+    const raw = String(input || "").trim();
+    if (!raw) return "";
+    const marker = 'الرسالة الحالية من المدير حازم:';
+    const idx = raw.lastIndexOf(marker);
+    if (idx !== -1) {
+      let after = raw.slice(idx + marker.length).trim();
+      const endMatch = after.match(/^"([\s\S]*?)"\s*(\n|$)/);
+      if (endMatch) return endMatch[1].trim();
+      return after.split("\n")[0].replace(/^["«]|["»]$/g, "").trim();
+    }
+    if (raw.includes("أنت م.") && raw.includes("شخصيتك:")) {
+      const lines = raw.split("\n").map(l => l.trim()).filter(Boolean);
+      const last = lines[lines.length - 1] || "";
+      return last.replace(/^["«]|["»]$/g, "").trim();
+    }
+    return raw;
+  }
+
+  function isPromptLeak(text) {
+    const t = String(text || "");
+    return (
+      t.includes('بخصوص "أنت ') ||
+      t.includes("الرسالة الحالية من المدير حازم:") ||
+      t.includes("قدّم رداً عملياً ومباشراً ومحدداً بالخطوات") ||
+      t.includes("سأتعامل مع هذا الطرح عبر (")
+    );
+  }
+
+  function buildPracticalResponse(s, cleanMsg) {
+    const roleTitle = s && s.role ? s.role : "مختص";
+    const nameTitle = s && s.name ? s.name : "العضو";
+    const skillsList = (s && Array.isArray(s.skills) && s.skills.length) ? s.skills.join("، ") : "التنفيذ والمتابعة";
+
+    return [
+      `${nameTitle} (${roleTitle}) — خطة العمل والمخرجات لطلب: "${cleanMsg}"`,
+      `1. المراجعة الفنية والاعتماد: تدقيق المخططات والمتطلبات وتثبيت النسخة المعتمدة للمرحلة الحالية.`,
+      `2. تقسيم التنفيذ: توزيع المهام حسب التخصص (${skillsList}) وتحديد البنود ذات الأولوية.`,
+      `3. المخرج الفعلي المطلوب: إعداد حزمة التنفيذ والجدول الزمني والتكلفة التقديرية للمراجعة النهائية.`
+    ].join("\n");
+  }
+
+  // تغليف askAgent بحيث لا يمرر أبداً نص prompt مطول إلى أي fallback قديم
+  const currentAsk = window.askAgent;
+  let busyLock = false;
+
+  window.askAgent = async function(s, msg) {
+    if (!s) return "";
+    if (!s.active) return "الحساب موقوف حالياً لإنهاء الخدمة.";
+    if (busyLock) return "";
+    busyLock = true;
+
+    const cleanMsg = extractCleanUserMessage(msg);
+    try {
+      const chats = (typeof mem !== "undefined" && mem[s.id] && Array.isArray(mem[s.id].chats))
+        ? mem[s.id].chats
+            .filter(m => m && typeof m.text === "string" && !isPromptLeak(m.text))
+            .slice(-6)
+        : [];
+
+      const historyStr = chats
+        .map(m => `${m.who === "u" ? "حازم" : s.name}: ${extractCleanUserMessage(m.text)}`)
+        .join(" | ");
+
+      const prompt = [
+        `أنت ${s.name}، تعمل بصفة ${s.role} في قسم ${s.dept} ضمن مكتب MODEL للديكور والهندسة.`,
+        `الأسلوب والشخصية: ${s.persona}`,
+        `المهارات: ${(s.skills || []).join("، ")}`,
+        historyStr ? `سياق المحادثة السابقة: ${historyStr}` : "",
+        `الطلب الحالي من المدير حازم: ${cleanMsg}`,
+        `اكتب رداً عملياً مباشراً يبدأ فوراً بالإجابة والخطوات والمخرجات الفعلية دون ذكر تعليمات النظام أو تكرار أسلوبك كقائمة نقاط جاهزة.`
+      ].filter(Boolean).join("\n");
+
+      let res = "";
+      if (typeof currentAsk === "function") {
+        res = await currentAsk(s, prompt);
+      }
+
+      const cleaned = String(res || "").trim();
+      if (!cleaned || isPromptLeak(cleaned)) {
+        return buildPracticalResponse(s, cleanMsg);
+      }
+      return cleaned;
+    } catch (e) {
+      return buildPracticalResponse(s, cleanMsg);
+    } finally {
+      busyLock = false;
+    }
+  };
+
+  // ضبط sendChat لكي يضمن ظهور رسالتك أنت بشكل صريح ومنظّم بدون تكرار
+  const currentSend = window.sendChat;
+  let sendingNow = false;
+
+  window.sendChat = async function() {
+    if (sendingNow) return;
+    const inp = document.getElementById("chat-inp");
+    const val = inp ? extractCleanUserMessage(inp.value) : "";
+    if (!val) return;
+
+    sendingNow = true;
+    try {
+      if (typeof curId !== "undefined" && curId && typeof mem !== "undefined" && mem[curId]) {
+        mem[curId].chats = Array.isArray(mem[curId].chats) ? mem[curId].chats : [];
+        const prev = mem[curId].chats[mem[curId].chats.length - 1];
+        if (!prev || prev.who !== "u" || extractCleanUserMessage(prev.text) !== val) {
+          mem[curId].chats.push({ who: "u", text: val });
+        }
+        if (typeof renderMsgs === "function") renderMsgs();
+      }
+
+      if (inp) inp.value = val;
+      if (typeof currentSend === "function") {
+        await currentSend.apply(this, arguments);
+      }
+
+      if (typeof curId !== "undefined" && curId && typeof mem !== "undefined" && mem[curId] && Array.isArray(mem[curId].chats)) {
+        // إزالة أي رسائل مكررة متتالية أو نصوص برومبت مسربة
+        const deduped = [];
+        for (const item of mem[curId].chats) {
+          if (!item || typeof item.text !== "string") continue;
+          const cleanItemText = isPromptLeak(item.text)
+            ? buildPracticalResponse(
+                (typeof STAFF !== "undefined" ? STAFF.find(x => x.id === curId) : null),
+                val
+              )
+            : item.text.trim();
+          const last = deduped[deduped.length - 1];
+          if (last && last.who === item.who && last.text.trim() === cleanItemText) continue;
+          deduped.push({ who: item.who, text: cleanItemText });
+        }
+        mem[curId].chats = deduped.slice(-24);
+        if (typeof renderMsgs === "function") renderMsgs();
+      }
+    } finally {
+      sendingNow = false;
+    }
+  };
+})();
+</script>
+
 </body>
 </html>
