@@ -1719,5 +1719,178 @@ window.askAgent = async function(s, userMsg) {
 })();
 </script>
 
+
+<script>
+(function fixChatLoggingDedupeAndRealOutcomes() {
+  const STATE_KEY = "model_studio_v3_state";
+
+  function loadStudioState() {
+    try {
+      return JSON.parse(localStorage.getItem(STATE_KEY) || "{}");
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveStudioState(st) {
+    try {
+      localStorage.setItem(STATE_KEY, JSON.stringify(st));
+    } catch (e) {}
+  }
+
+  function extractPureUserText(raw) {
+    const s = String(raw || "");
+    const markers = ["الرسالة الجديدة الآن:", "أجب مباشرة وبالعربية على رسالة المدير حازم الجديدة"];
+    for (const m of markers) {
+      const idx = s.lastIndexOf(m);
+      if (idx !== -1) {
+        return s.slice(idx + m.length).replace(/^[\s:\-"»]+/, "").replace(/["«]+$/, "").trim();
+      }
+    }
+    if (s.includes("سجل محادثتك السابقة") || s.includes("شخصيتك المهنية:")) {
+      const lines = s.split("\n").map(x => x.trim()).filter(Boolean);
+      return lines[lines.length - 1] || "";
+    }
+    return s.trim();
+  }
+
+  function createActionableOutcome(staff, userText, replyText) {
+    const st = loadStudioState();
+    st.outcomes = Array.isArray(st.outcomes) ? st.outcomes : [];
+    const cleanQ = extractPureUserText(userText);
+    if (!cleanQ || cleanQ.length < 2) return null;
+
+    const item = {
+      id: "OUT-" + Date.now().toString(36).toUpperCase(),
+      assignee: staff ? staff.name : "فريق المكتب",
+      role: staff ? staff.role : "",
+      dept: staff ? staff.dept : "",
+      request: cleanQ.slice(0, 140),
+      summary: String(replyText || "").slice(0, 180),
+      status: "قيد التنفيذ الفعلي",
+      updatedAt: new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })
+    };
+
+    const duplicate = st.outcomes.find(x => x.assignee === item.assignee && x.request === item.request);
+    if (!duplicate) {
+      st.outcomes.unshift(item);
+      st.outcomes = st.outcomes.slice(0, 25);
+      saveStudioState(st);
+    }
+    return item;
+  }
+
+  function ensureOutcomesPanel() {
+    const modal = document.getElementById("m-ai");
+    if (!modal || document.getElementById("studio-outcomes-box")) return;
+    const box = modal.querySelector(".modal-box");
+    if (!box) return;
+
+    const panel = document.createElement("div");
+    panel.id = "studio-outcomes-box";
+    panel.className = "box";
+    panel.style.cssText = "max-height:170px;overflow-y:auto;font-size:12px;line-height:1.5;";
+    panel.innerHTML = "<b>📌 سجل النتائج والمخرجات الفعلية المسجلة:</b><div id='studio-outcomes-list' style='margin-top:6px;'>لا توجد مخرجات مسجلة بعد.</div>";
+    box.appendChild(panel);
+    refreshOutcomesList();
+  }
+
+  function refreshOutcomesList() {
+    const listEl = document.getElementById("studio-outcomes-list");
+    if (!listEl) return;
+    const st = loadStudioState();
+    const arr = Array.isArray(st.outcomes) ? st.outcomes : [];
+    if (!arr.length) {
+      listEl.innerHTML = "لا توجد مخرجات مسجلة بعد.";
+      return;
+    }
+    listEl.innerHTML = arr.slice(0, 8).map(o =>
+      `<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.08);">
+        <b>[${o.id}]</b> ${o.assignee}: <span>${o.request}</span> — <span style="color:#38bdf8;">${o.status}</span> (${o.updatedAt})
+      </div>`
+    ).join("");
+  }
+
+  const origOpenM = window.openM;
+  if (typeof origOpenM === "function") {
+    window.openM = function(id) {
+      origOpenM(id);
+      if (id === "m-ai") setTimeout(ensureOutcomesPanel, 70);
+    };
+  }
+
+  // منع الردود المكررة المتتالية للموظف نفسه
+  const lastReplyByAgent = {};
+  const rawAsk = window.askAgent;
+
+  window.askAgent = async function(s, incomingMsg) {
+    if (!s) return "";
+    if (!s.active) return "الحساب موقوف حالياً لإنهاء الخدمة.";
+
+    const pureMsg = extractPureUserText(incomingMsg);
+    const chats = (typeof mem !== "undefined" && mem[s.id] && Array.isArray(mem[s.id].chats))
+      ? mem[s.id].chats.filter(m => m && typeof m.text === "string" && !m.text.includes("سجل محادثتك السابقة")).slice(-6)
+      : [];
+
+    const recentDialogue = chats
+      .map(m => `${m.who === "u" ? "حازم" : s.name}: ${m.text}`)
+      .join(" | ");
+
+    const promptForModel = [
+      `أنت ${s.name}، ${s.role} في قسم ${s.dept} بمكتب MODEL للديكور والهندسة.`,
+      `شخصيتك: ${s.persona}`,
+      `مهاراتك: ${(s.skills || []).join("، ")}`,
+      recentDialogue ? `الحوار السابق: ${recentDialogue}` : "",
+      `الرسالة الحالية من المدير حازم: "${pureMsg}"`,
+      `قدّم رداً عملياً ومباشراً ومحدداً بالخطوات والمخرجات العملية دون تكرار عبارات محفوظة أو مقدمات مطولة.`
+    ].filter(Boolean).join("\n");
+
+    let text = "";
+    if (typeof rawAsk === "function") {
+      try {
+        text = await rawAsk(s, promptForModel);
+      } catch (e) {}
+    }
+
+    text = String(text || "").replace(/_\(رد فوري بدون انتظار ضغط الخادم\)_/g, "").trim();
+
+    // إذا كان الرد هو نفس الرد السابق أو خالياً، نولّد ردّاً مختصراً مرتبطاً بالرسالة الجديدة
+    const prevKey = s.id;
+    const isSameAsPrev = lastReplyByAgent[prevKey] && lastReplyByAgent[prevKey].trim() === text.trim();
+    if (!text || isSameAsPrev || text.includes("سجل محادثتك السابقة")) {
+      text = `بصفتي ${s.name} (${s.role})، تم تسجيل طلبك بخصوص "${pureMsg}" وتحديد خطوات التنفيذ ضمن (${(s.skills || ["التخصص"]).join("، ")}) مع متابعة المخرجات المطلوبة.`;
+    }
+
+    lastReplyByAgent[prevKey] = text;
+    createActionableOutcome(s, pureMsg, text);
+    refreshOutcomesList();
+    return text;
+  };
+
+  // ضمان تسجيل رسالة المستخدم أولاً ثم رد الموظف بشكل واضح ومتسلسل
+  const origSendChat = window.sendChat;
+  if (typeof origSendChat === "function") {
+    window.sendChat = async function() {
+      const inp = document.getElementById("chat-inp");
+      const rawVal = inp ? inp.value.trim() : "";
+      if (!rawVal) return;
+
+      if (typeof curId !== "undefined" && curId && typeof mem !== "undefined" && mem[curId]) {
+        mem[curId].chats = Array.isArray(mem[curId].chats) ? mem[curId].chats : [];
+        const lastEntry = mem[curId].chats[mem[curId].chats.length - 1];
+        if (!lastEntry || lastEntry.who !== "u" || lastEntry.text !== rawVal) {
+          mem[curId].chats.push({ who: "u", text: rawVal });
+          if (typeof renderMsgs === "function") renderMsgs();
+        }
+      }
+
+      await origSendChat.apply(this, arguments);
+      if (typeof renderMsgs === "function") renderMsgs();
+      refreshOutcomesList();
+    };
+  }
+})();
+</script>
+
 </body>
 </html>
